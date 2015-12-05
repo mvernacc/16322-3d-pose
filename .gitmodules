@@ -1,0 +1,3 @@
+[submodule "estimators"]
+	path = estimators
+	url = git@github.mit.edu:mvernacc/estimators.git
