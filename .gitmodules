@@ -1,3 +1,9 @@
 [submodule "estimators"]
 	path = estimators
 	url = git@github.mit.edu:mvernacc/estimators.git
+[submodule "sensor_drivers/beaglebone-px4flow-i2c"]
+	path = sensor_drivers/beaglebone-px4flow-i2c
+	url = git@github.mit.edu:mvernacc/beaglebone-px4flow-i2c.git
+[submodule "sensor_drivers/beaglebone-mpu9x50"]
+	path = sensor_drivers/beaglebone-mpu9x50
+	url = https://github.com/mvernacc/beaglebone-mpu9x50
