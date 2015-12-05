@@ -245,6 +245,10 @@ def main(args):
         dt = np.mean(t_diff)
         print 'Time step = {:.3f} +/- {:.3f} second'.format(
             dt, np.std(t_diff))
+        # MPU data is in g, conver to meter second**-1
+        data['accel_data'] = data['accel_data'] * 9.81
+        # MPU gyro data is in degree second**-1, convert to radian second**-1
+        data['gyro_data'] = np.deg2rad(data['gyro_data'])
         y_traj = np.array([np.hstack((w, h, a)) for (w, h, a) in \
             zip(data['gyro_data'], data['mag_data'], data['accel_data'])])
         assert y_traj.shape[0] == n_steps
