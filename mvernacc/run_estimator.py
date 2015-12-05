@@ -180,7 +180,7 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
             plt.plot(t_traj, x_traj[:, i], color=colors[i], linestyle='-',
                 label='q[{:d}] true'.format(i))
         plt.plot(t_traj, x_est_traj[:, i], color=colors[i], linestyle='--',
-            label='q[{:d}] est'.format(i), marker='x')
+            label='q[{:d}] est'.format(i))
     plt.xlabel('Time [s]')
     plt.ylabel('Quaternion')
     plt.legend(framealpha=0.5)
@@ -205,7 +205,7 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
 
     ax3 = plt.subplot(3, 2, 3, sharex=ax)
     for i in xrange(3):
-        plt.plot(t_traj, y_traj[:, i + 3], color=colors[i+1], marker='x',
+        plt.plot(t_traj, y_traj[:, i + 3], color=colors[i+1],
             label='mag[{:d}]'.format(i))
     plt.xlabel('Time [s]')
     plt.ylabel('Mag Field [uT]')
