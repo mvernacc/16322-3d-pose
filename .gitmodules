@@ -7,3 +7,6 @@
 [submodule "sensor_drivers/beaglebone-mpu9x50"]
 	path = sensor_drivers/beaglebone-mpu9x50
 	url = https://github.com/mvernacc/beaglebone-mpu9x50
+[submodule "transforms3d"]
+	path = transforms3d
+	url = https://github.com/matthew-brett/transforms3d.git
