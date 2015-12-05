@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import transforms3d.quaternions as quat
 import argparse
+import cPickle as pickle
 
 from estimators.sensor_models.sensor_interface import KalmanSensors
 from estimators.sensor_models.magnetometer import Magnetometer
@@ -88,7 +89,7 @@ def create_estimator(dt):
     return est
 
 
-def run(est, meas_source, n_steps, dt):
+def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
     # Set up the measurement source
     if meas_source == 'sim':
         # Create the sensors for the simulation (unknown, random bias parameters). 
@@ -116,16 +117,25 @@ def run(est, meas_source, n_steps, dt):
 
         # Sensor bias trajectories
         gyro_bias_traj = np.zeros((n_steps, 3))
+
+        # Measurement trajectory
+        y_traj = np.zeros((n_steps,
+                len(sim_sensors.measurement_function(x_init))))
+
+        # Time
+        t_traj = np.zeros(n_steps)
+
+    elif meas_source == 'pickle':
+        assert t_traj is not None
+        assert y_traj is not None
     else:
         raise ValueError
 
     # Create trajectories for storing data
     x_est_traj = np.zeros((n_steps, len(est.x_est)))
     x_est_traj[0] = est.x_est
-    t_traj = np.zeros(n_steps)
     Q_traj = np.zeros((n_steps, len(est.x_est)-1, len(est.x_est)-1))
     Q_traj[0] = est.Q
-    y_traj = np.zeros((n_steps, len(sim_sensors.measurement_function(x_init))))
 
     # Run the fitler
     for i in xrange(1, n_steps):
@@ -137,6 +147,9 @@ def run(est, meas_source, n_steps, dt):
             y_traj[i] = sim_sensors.add_noise(sim_sensors.measurement_function(x_traj[i-1]))
             # Simulate the true dynamics.
             x_traj[i] = rotation_dynamics(x_traj[i-1], u_traj[i], dt)
+            t_traj[i] = t_traj[i-1] + dt
+        elif meas_source == 'pickle':
+            pass
         else:
             raise ValueError
         # Update filter estimate.
@@ -145,7 +158,6 @@ def run(est, meas_source, n_steps, dt):
         # Record the estimates.
         x_est_traj[i] = est.x_est
         Q_traj[i] = est.Q        
-        t_traj[i] = t_traj[i-1] + dt
 
     print 'Final state est = '
     print est.x_est
@@ -154,6 +166,8 @@ def run(est, meas_source, n_steps, dt):
 
     if meas_source == 'sim':
         return (t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj)
+    elif meas_source == 'pickle':
+        return (t_traj, x_est_traj, Q_traj, y_traj, None, None)
     else:
         raise ValueError
 
@@ -162,8 +176,9 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
     ax = plt.subplot(3, 2, 1)
     colors = ['black', 'red', 'green', 'blue']
     for i in xrange(4):
-        plt.plot(t_traj, x_traj[:, i], color=colors[i], linestyle='-',
-            label='q[{:d}] true'.format(i))
+        if x_traj is not None:
+            plt.plot(t_traj, x_traj[:, i], color=colors[i], linestyle='-',
+                label='q[{:d}] true'.format(i))
         plt.plot(t_traj, x_est_traj[:, i], color=colors[i], linestyle='--',
             label='q[{:d}] est'.format(i), marker='x')
     plt.xlabel('Time [s]')
@@ -178,8 +193,9 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
             Q_traj), axis=1)
         ), axis=2)
     for i in [0, 1, 2]:
-        plt.plot(t_traj, x_traj[:, i+4], color=colors[i+1], linestyle='-',
-            label='w[{:d}] true'.format(i))
+        if x_traj is not None:
+            plt.plot(t_traj, x_traj[:, i+4], color=colors[i+1], linestyle='-',
+                label='w[{:d}] true'.format(i))
         plot_single_state_vs_time(ax2, t_traj, x_est_traj, Q_traj_padded, i+4,
             color=colors[i+1], label='w[{:d}] est'.format(i),
             linestyle='--')
@@ -197,8 +213,9 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
 
     ax4 = plt.subplot(3, 2, 4, sharex=ax)
     for i in [0, 1, 2]:
-        plt.plot(t_traj, gyro_bias_traj[:, i], color=colors[i+1], linestyle='-',
-            label='b[{:d}] true'.format(i))
+        if gyro_bias_traj is not None:
+            plt.plot(t_traj, gyro_bias_traj[:, i], color=colors[i+1], linestyle='-',
+                label='b[{:d}] true'.format(i))
         plot_single_state_vs_time(ax4, t_traj, x_est_traj, Q_traj_padded, i+7,
             color=colors[i+1], label='b[{:d}] est'.format(i),
             linestyle='--')
@@ -217,15 +234,34 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
 
 def main(args):
     np.set_printoptions(precision=3)
-    dt=0.1
+
+    # Parse measurement file if needed
+    if args.meas_source == 'pickle':
+        with open(args.pkl_file, 'rb') as f:
+            data = pickle.load(f)
+        t_traj = data['time']
+        n_steps = len(t_traj)
+        t_diff = np.diff(t_traj)
+        dt = np.mean(t_diff)
+        print 'Time step = {:.3f} +/- {:.3f} second'.format(
+            dt, np.std(t_diff))
+        y_traj = np.array([np.hstack((w, h, a)) for (w, h, a) in \
+            zip(data['gyro_data'], data['mag_data'], data['accel_data'])])
+        assert y_traj.shape[0] == n_steps
+    elif args.meas_source == 'sim':
+        dt=0.1
+        n_steps = 500
+        t_traj = None
+        y_traj = None
+    else:
+        raise ValueError
     
     # Create the estimator
     est = create_estimator(dt)
 
     # Run the estimator
-    n_steps = 500
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
-        run(est, args.meas_source, n_steps, dt)
+        run(est, args.meas_source, n_steps, dt, t_traj, y_traj)
 
     # Plot the results
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj)
@@ -234,6 +270,11 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run the state estimator.')
-    parser.add_argument('--meas_source', type=str, choices=['sim'])
+    parser.add_argument('--meas_source', type=str, choices=['sim', 'pickle'],
+        required=True)
+    parser.add_argument('--pkl_file', type=str, required=False,
+        help='The pickle file containing the measurement data. Required if --meas_source is "pickle".')
     args = parser.parse_args()
+    if args.meas_source == 'pickle' and args.pkl_file is None:
+        parser.error('--pkl_file is required if --meas_source is "pickle"')
     main(args)
