@@ -74,7 +74,7 @@
 % *** GRAPHICS RELATED PACKAGES ***
 %
 \ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
+  \usepackage[pdftex]{graphicx}
   % declare the path(s) where your graphic files are
   % \graphicspath{{../pdf/}{../jpeg/}}
   % and their extensions so you won't have to specify these with
@@ -352,6 +352,32 @@ To correct for drift, exteroceptive measurements are incorporated into the estim
 
 \section{Sensor Characterization}
 Allan variance \cite{UCAM-CL-TR-696}.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/gyro_data_allan.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Allan deviation analysis of MPU-9150 rate gyroscope data.}
+  \label{gyro_data_allan}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/accel_data_allan.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Allan deviation analysis of MPU-9150 accelerometer data.}
+  \label{accel_data_allan}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/mag_data_allan.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Allan deviation analysis of MPU-9150 magnetometer data.}
+  \label{mag_data_allan}
+\end{figure}
+
+
 \begin{table*}[!t]
   % increase table row spacing, adjust to taste
   \renewcommand{\arraystretch}{1.3}
