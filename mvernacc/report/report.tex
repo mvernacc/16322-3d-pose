@@ -317,7 +317,26 @@ The abstract goes here.
 
 
 \section{Introduction}
+The estimation of an object's 3D pose (rotation and translation) relative to a global reference frame is an important problem in robotics and aerospace engineering. This estimation task is called navigation. Satellites, launch vehicles, manned aircraft and UAVs need pose information in order to control their trajectories and to point sensors, communications equipment and weapons at targets.\\
 
+Two broad classes of sensors are used in navigation: proprioceptive and exteroceptive \cite{Trawny05quat,Kelly-2010-711}. Proprioceptive sensors measure quantities internal to the robot or vehicle; exteroceptive senors measure the surrounding world.\\
+
+Accelerometers and rate gyroscopes are common proprioceptive sensors; they measure the acceleration and angular velocity of the vehicle body. The sensors detect the effect of non-inertial fictitious forces on the motion of a small system (oscillating mass, spinning wheel, etc.) within the sensor. Typically, three orthogonal gyroscopes and three orthogonal accelerometers are combined into a single device, called a strapdown Inertial Measurement Unit (IMU) \cite{UCAM-CL-TR-696}.\\
+
+In articulated robots or vehicles, proprioceptive sensors are also used to sense joint angles and actuator positions.\\
+
+Navigation can be performed by integrating IMU measurements. However, noise and sensor biases cause the integrated estimate to drift over time. Depending on the quality of the sensors, the estimate becomes useless after tens of seconds (MEMS devices) to several hours (navigation-grade IMUs) \cite{UCAM-CL-TR-696}.\\
+
+To correct for drift, exteroceptive measurements are incorporated into the estimate. Exteroceptive navigation sensors include:
+\begin{itemize}
+  \item \emph{Field sensors} measure orientation relative to a vector field which has a known direction in the global frame. Magnetometers measure the Earth's magnetic field, and accelerometers can measure the gravitational field (on a non-free-falling vehicle). Note that these sensors cannot detect rotation about the vector, e.g. a gravitational sensor cannot provide yaw/heading information.
+
+  \item \emph{Beacon/Landmark sensors} measure the range and/or bearing to a set of beacons. Examples include Sun sensors \cite{sun-sense}, GPS/GNSS, and LORAN.
+
+  \item \emph{Mapping sensors} sense nearby visual or shape features and match them to a map of the environment. Cameras, LiDAR, and ultrasound rangefinders have been used for mapping. The map can be known a priori, or the estimator can perform simultaneous localization and mapping (SLAM) \cite{AHuangISRR11}.
+
+  \item \emph{Odometry sensors} measure the incremental motion of the vehicle relative to the environment. On wheeled vehicles, encoders are used to count wheel revolutions. \emph{Visual odometry} uses optical flow algorithms to compute motion from camera data \cite{Dille_2009_6430}.
+\end{itemize}
 
 
 \section{Hardware}
@@ -358,7 +377,8 @@ Allan variance \cite{UCAM-CL-TR-696}.
 % number - used to balance the columns on the last page
 % adjust value as needed - may need to be readjusted if
 % the document is modified later
-%\IEEEtriggeratref{8}
+\newpage
+\IEEEtriggeratref{8}
 % The "triggered" command can be changed if desired:
 %\IEEEtriggercmd{\enlargethispage{-5in}}
 
