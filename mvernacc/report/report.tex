@@ -155,7 +155,7 @@
 
 % *** ALIGNMENT PACKAGES ***
 %
-%\usepackage{array}
+\usepackage{array}
 % Frank Mittelbach's and David Carlisle's array.sty patches and improves
 % the standard LaTeX2e array and tabular environments to provide better
 % appearance and additional user controls. As the default LaTeX2e table
@@ -256,8 +256,8 @@
 % http://www.ctan.org/pkg/url
 % Basically, \url{my_url_here}.
 
-
-
+% *** Other packages ***
+\usepackage{siunitx}
 
 % *** Do not adjust lengths that control margins, column widths, etc. ***
 % *** Do not use packages that alter fonts (such as pslatex).         ***
@@ -352,6 +352,34 @@ To correct for drift, exteroceptive measurements are incorporated into the estim
 
 \section{Sensor Characterization}
 Allan variance \cite{UCAM-CL-TR-696}.
+\begin{table*}[!t]
+  % increase table row spacing, adjust to taste
+  \renewcommand{\arraystretch}{1.3}
+  %if using array.sty, it might be a good idea to tweak the value of
+  % \extrarowheight as needed to properly center the text within the cells
+  \caption{Sensor Noise Parameters. Specified parameters from \cite{mpu9150} unless otherwise noted.}
+  \label{table_example}
+  \centering
+  % Some packages, such as MDW tools, offer better commands for making tables
+  % than the plain LaTeX2e tabular which is used here.
+  \begin{tabular}{|l||c|c|c|c|}
+    \hline
+    Sensor & FFT noise (meas) & FFT noise (spec) & RMS noise (meas) & RMS noise (spec)\\
+    \hline
+    MPU-9150 Gyro $x$ axis & \SI{0.0179}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.125}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
+    MPU-9150 Gyro $y$ axis & \SI{0.0162}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.106}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
+    MPU-9150 Gyro $z$ axis & \SI{0.0180}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.141}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
+    \hline
+    MPU-9150 Accel $x$ axis & \SI{4.56e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $y$ axis & \SI{4.63e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $z$ axis & \SI{6.66e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0453}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    \hline
+    MPU-9150 Mag $x$ axis & \SI{0.136}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.913}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
+    MPU-9150 Mag $y$ axis & \SI{0.143}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.923}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
+    MPU-9150 Mag $x$ axis & \SI{0.151}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.983}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
+    \hline
+  \end{tabular}
+\end{table*}
 
 \section{Estimator Design}
 
