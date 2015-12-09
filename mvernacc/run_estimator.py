@@ -122,6 +122,9 @@ def create_estimator(dt, use_mag):
 def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
     # Set up the measurement source
     if meas_source == 'sim':
+        # Time
+        t_traj = np.linspace(0, (n_steps - 1)*dt, n_steps)
+
         # Create the sensors for the simulation (unknown, random bias parameters). 
         gyro_sim = RateGyro(dt=dt)
         magneto_sim = Magnetometer(h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
@@ -157,8 +160,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
         y_traj = np.zeros((n_steps,
                 len(sim_sensors.measurement_function(x_init))))
 
-        # Time
-        t_traj = np.zeros(n_steps)
+        
 
     elif meas_source == 'pickle':
         assert t_traj is not None
@@ -182,7 +184,6 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
             y_traj[i] = sim_sensors.add_noise(sim_sensors.measurement_function(x_traj[i-1]))
             # Simulate the true dynamics.
             x_traj[i] = rotation_dynamics(x_traj[i-1], u_traj[i], dt)
-            t_traj[i] = t_traj[i-1] + dt
         elif meas_source == 'pickle':
             pass
         else:
