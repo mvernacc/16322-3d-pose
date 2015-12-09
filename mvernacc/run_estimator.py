@@ -75,14 +75,22 @@ def create_estimator(dt, use_mag):
 
     # Initial state estimate. Set the sensor bias states
     # to an initial estimate of zero.
-    x_est_init = np.concatenate(([0.76, 0.76, 0., 0., 0., 0., 0.],
+    q_init = quat.axangle2quat([0,0,1], np.deg2rad(-45))
+    body_rate_init = [0., 0., 0.]
+    x_est_init = np.concatenate(( q_init, body_rate_init,
         np.zeros(n_sensor_states)))
 
     # Initial estimate covariance.
     # The std. dev. uncertainty of the initial system state
     # estimate
-    system_state_init_std_dev = np.hstack((np.deg2rad([30., 30., 30.]), 
-        np.deg2rad([0.1, 0.1, 0.1])))
+    yaw_init_std_dev = np.deg2rad(10.)
+    pitch_init_std_dev = np.deg2rad(1.0)
+    roll_init_std_dev = np.deg2rad(1.0)
+    body_rate_init_std_dev = np.deg2rad([0.1, 0.1, 0.1])
+    system_state_init_std_dev = np.hstack((
+        [roll_init_std_dev, pitch_init_std_dev, yaw_init_std_dev],
+        body_rate_init_std_dev
+        ))
     # The std. dev. uncertainty of the sensor bias states.
     # [units: radian second**-1]
     gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
@@ -122,6 +130,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
         accel_sim.is_stateful = False
         # Number of system states.
         n_system_states = 7
+
         sim_sensors = KalmanSensors([gyro_sim, magneto_sim, accel_sim],
             [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states)
 
