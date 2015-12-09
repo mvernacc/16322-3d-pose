@@ -119,7 +119,7 @@ def create_estimator(dt, use_mag):
     return est
 
 
-def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
+def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
     # Set up the measurement source
     if meas_source == 'sim':
         # Create the sensors for the simulation (unknown, random bias parameters). 
@@ -131,8 +131,12 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
         # Number of system states.
         n_system_states = 7
 
-        sim_sensors = KalmanSensors([gyro_sim, magneto_sim, accel_sim],
-            [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states)
+        if use_mag:
+            sim_sensors = KalmanSensors([gyro_sim, accel_sim, magneto_sim],
+                [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states)
+        else:
+            sim_sensors = KalmanSensors([gyro_sim, accel_sim],
+                [[4, 5, 6], [0, 1, 2, 3]], n_system_states)
 
         # Initial true state
         x_init = np.array([1., 0., 0., 0., 0., 0., 0.])
@@ -334,7 +338,8 @@ def main(args):
 
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
-        run(est, args.meas_source, n_steps, dt, t_traj, y_traj)
+        run(est, args.meas_source, n_steps, dt, t_traj, y_traj,
+            args.use_mag)
 
     # Plot the results
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
