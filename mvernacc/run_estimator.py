@@ -174,6 +174,9 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
 
 
 def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
+    # Radian to degree conversion
+    r2d = 180.0 / np.pi
+
     ax = plt.subplot(3, 2, 1)
     colors = ['black', 'red', 'green', 'blue']
     for i in xrange(4):
@@ -195,13 +198,13 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
         ), axis=2)
     for i in [0, 1, 2]:
         if x_traj is not None:
-            plt.plot(t_traj, x_traj[:, i+4], color=colors[i+1], linestyle='-',
+            plt.plot(t_traj, x_traj[:, i+4] * r2d, color=colors[i+1], linestyle='-',
                 label='w[{:d}] true'.format(i))
-        plot_single_state_vs_time(ax2, t_traj, x_est_traj, Q_traj_padded, i+4,
+        plot_single_state_vs_time(ax2, t_traj, x_est_traj * r2d, Q_traj_padded * r2d**2, i+4,
             color=colors[i+1], label='w[{:d}] est'.format(i),
             linestyle='--')
     plt.xlabel('Time [s]')
-    plt.ylabel('Angular rate [rad / s]')
+    plt.ylabel('Angular rate [deg / s]')
     plt.legend(framealpha=0.5)
 
     ax3 = plt.subplot(3, 2, 3, sharex=ax)
@@ -217,11 +220,11 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
         if gyro_bias_traj is not None:
             plt.plot(t_traj, gyro_bias_traj[:, i], color=colors[i+1], linestyle='-',
                 label='b[{:d}] true'.format(i))
-        plot_single_state_vs_time(ax4, t_traj, x_est_traj, Q_traj_padded, i+7,
+        plot_single_state_vs_time(ax4, t_traj, x_est_traj * r2d, Q_traj_padded * r2d**2, i+7,
             color=colors[i+1], label='b[{:d}] est'.format(i),
             linestyle='--')
     plt.xlabel('Time [s]')
-    plt.ylabel('Gyro bias [rad / s]')
+    plt.ylabel('Gyro bias [deg / s]')
     plt.legend(framealpha=0.5)
 
     ax5 = plt.subplot(3, 2, 5, sharex=ax)
@@ -247,11 +250,11 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
     # roll about x
     Q_ypr[:,2,2] = Q_traj[:,0,0]
     for i in xrange(3):
-        plot_single_state_vs_time(ax6, t_traj, ypr_est, Q_ypr,
+        plot_single_state_vs_time(ax6, t_traj, ypr_est * r2d, Q_ypr * r2d**2,
             i, color=colors[i+1], label=angle_names[i] + ' est',
             linestyle='--')
     plt.xlabel('Time [s]')
-    plt.ylabel('Attitude [rad]')
+    plt.ylabel('Attitude [deg]')
     plt.legend(framealpha=0.5)
 
 
