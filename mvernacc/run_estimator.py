@@ -142,7 +142,9 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
                 [[4, 5, 6], [0, 1, 2, 3]], n_system_states)
 
         # Initial true state
-        x_init = np.array([1., 0., 0., 0., 0., 0., 0.])
+        q_init = quat.axangle2quat([0,0,1], np.deg2rad(-45))
+        body_rate_init = [0., 0., 0.]
+        x_init = np.concatenate(( q_init, body_rate_init))
 
         # True state trajectory
         x_traj = np.zeros((n_steps, len(x_init)))
@@ -294,6 +296,7 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
 
     ax6 = plt.subplot(3, 2, 6)
     angle_names = ['yaw', 'pitch', 'roll']
+    angle_colors = ['blue', 'green', 'red']
     # Find yaw, pitch and roll
     ypr_est = np.zeros((len(t_traj), 3))
     for i in xrange(len(t_traj)):
@@ -308,7 +311,7 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     Q_ypr[:,2,2] = Q_traj[:,0,0]
     for i in xrange(3):
         plot_single_state_vs_time(ax6, t_traj, ypr_est * r2d, Q_ypr * r2d**2,
-            i, color=colors[i+1], label=angle_names[i] + ' est',
+            i, color=angle_colors[i], label=angle_names[i] + ' est',
             linestyle='--')
     plt.xlabel('Time [s]')
     plt.ylabel('Attitude [deg]')
