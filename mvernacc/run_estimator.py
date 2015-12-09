@@ -7,6 +7,7 @@ Matt Vernacchia
 from matplotlib import pyplot as plt
 import numpy as np
 import transforms3d.quaternions as quat
+import transforms3d.taitbryan as tb
 import argparse
 import cPickle as pickle
 
@@ -229,6 +230,28 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
             label='accel[{:d}]'.format(i))
     plt.xlabel('Time [s]')
     plt.ylabel('Accel [m / s**2]')
+    plt.legend(framealpha=0.5)
+
+    ax6 = plt.subplot(3, 2, 6)
+    angle_names = ['yaw', 'pitch', 'roll']
+    # Find yaw, pitch and roll
+    ypr_est = np.zeros((len(t_traj), 3))
+    for i in xrange(len(t_traj)):
+        ypr_est[i] = tb.quat2euler(x_est_traj[i, :4])
+    # Find yaw, pitch, and roll covariance
+    Q_ypr = np.zeros((len(t_traj), 3, 3))
+    # yaw about z
+    Q_ypr[:,0,0] = Q_traj[:,2,2]
+    # pitch about y
+    Q_ypr[:,1,1] = Q_traj[:,1,1]
+    # roll about x
+    Q_ypr[:,2,2] = Q_traj[:,0,0]
+    for i in xrange(3):
+        plot_single_state_vs_time(ax6, t_traj, ypr_est, Q_ypr,
+            i, color=colors[i+1], label=angle_names[i] + ' est',
+            linestyle='--')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Attitude [rad]')
     plt.legend(framealpha=0.5)
 
 
