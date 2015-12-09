@@ -121,7 +121,8 @@ def create_estimator(dt, use_mag):
     return est
 
 
-def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
+def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
+    sim_type='static'):
     # Set up the measurement source
     if meas_source == 'sim':
         # Time
@@ -154,23 +155,28 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
 
         # Control trajectory
         u_traj = np.zeros((n_steps, 3))
-        t_x = 5.
-        t_y = 20.
-        t_z = 35.
-        dur = 5.
-        u = np.deg2rad(90) / dur / dt
-        u_traj[int(t_x/dt)] = u * np.array([1,0,0])
-        u_traj[int((t_x + dur)/dt)] = -2*u * np.array([1,0,0])
-        u_traj[int((t_x + 2*dur)/dt)] = u * np.array([1,0,0])
+        if sim_type == 'static':
+            # Keep zero control
+            pass
+        elif sim_type == 'xyz90':
+            t_x = 5.
+            t_y = 20.
+            t_z = 35.
+            dur = 5.
+            u = np.deg2rad(90) / dur / dt
+            u_traj[int(t_x/dt)] = u * np.array([1,0,0])
+            u_traj[int((t_x + dur)/dt)] = -2*u * np.array([1,0,0])
+            u_traj[int((t_x + 2*dur)/dt)] = u * np.array([1,0,0])
 
-        u_traj[int(t_y/dt)] = u * np.array([0,1,0])
-        u_traj[int((t_y + dur)/dt)] = -2*u * np.array([0,1,0])
-        u_traj[int((t_y + 2*dur)/dt)] = u * np.array([0,1,0])
+            u_traj[int(t_y/dt)] = u * np.array([0,1,0])
+            u_traj[int((t_y + dur)/dt)] = -2*u * np.array([0,1,0])
+            u_traj[int((t_y + 2*dur)/dt)] = u * np.array([0,1,0])
 
-        u_traj[int(t_z/dt)] = u * np.array([0,0,1])
-        u_traj[int((t_z + dur)/dt)] = -2*u * np.array([0,0,1])
-        u_traj[int((t_z + 2*dur)/dt)] = u * np.array([0,0,1])
-
+            u_traj[int(t_z/dt)] = u * np.array([0,0,1])
+            u_traj[int((t_z + dur)/dt)] = -2*u * np.array([0,0,1])
+            u_traj[int((t_z + 2*dur)/dt)] = u * np.array([0,0,1])
+        else:
+            raise ValueError
 
         # for i in xrange(100, 110):
         #     u_traj[i] = np.deg2rad([10.0, 0, 0])
@@ -370,7 +376,7 @@ def main(args):
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
         run(est, args.meas_source, n_steps, dt, t_traj, y_traj,
-            args.use_mag)
+            args.use_mag, args.sim_type)
 
     # Plot the results
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
@@ -384,9 +390,14 @@ if __name__ == '__main__':
         required=True)
     parser.add_argument('--pkl_file', type=str, required=False,
         help='The pickle file containing the measurement data. Required if --meas_source is "pickle".')
+    parser.add_argument('--sim_type', type=str, choices=['static', 'xyz90'],
+        required=False,
+        help='Which simulation to run. Required if --meas_source is "sim".')
     parser.add_argument('--use_mag', help='Use magnetometer data',
                     action='store_true')
     args = parser.parse_args()
     if args.meas_source == 'pickle' and args.pkl_file is None:
         parser.error('--pkl_file is required if --meas_source is "pickle"')
+    if args.meas_source == 'sim' and args.sim_type is None:
+        parser.error('--sim_type is required if --meas_source is "sim"')
     main(args)
