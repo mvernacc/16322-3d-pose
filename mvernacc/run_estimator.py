@@ -34,7 +34,7 @@ def rotation_dynamics(x, u, dt=0.01):
     return x_next
 
 
-def create_estimator(dt):
+def create_estimator(dt, use_mag):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
     magneto_est = Magnetometer(h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
     magneto_est.is_stateful = False
@@ -53,12 +53,20 @@ def create_estimator(dt):
     # Number of sensor bias states.
     n_sensor_states = 3
 
-    est_sensors = KalmanSensors([gyro_est, magneto_est, accel_est],
-        [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states,
-        [[7, 8, 9], [], []], n_sensor_states,
-        lambda x, u: rotation_dynamics(x, u, dt),
-        W,
-        1)
+    if use_mag:
+        est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
+            [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states,
+            [[7, 8, 9], [], []], n_sensor_states,
+            lambda x, u: rotation_dynamics(x, u, dt),
+            W,
+            1)
+    else:
+        est_sensors = KalmanSensors([gyro_est, accel_est],
+            [[4, 5, 6], [0, 1, 2, 3]], n_system_states,
+            [[7, 8, 9], []], n_sensor_states,
+            lambda x, u: rotation_dynamics(x, u, dt),
+            W,
+            1)
 
     # Initial state estimate. Set the sensor bias states
     # to an initial estimate of zero.
@@ -173,7 +181,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None):
         raise ValueError
 
 
-def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
+def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_mag):
     # Radian to degree conversion
     r2d = 180.0 / np.pi
 
@@ -208,12 +216,13 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
     plt.legend(framealpha=0.5)
 
     ax3 = plt.subplot(3, 2, 3, sharex=ax)
-    for i in xrange(3):
-        plt.plot(t_traj, y_traj[:, i + 3], color=colors[i+1],
-            label='mag[{:d}]'.format(i))
-    plt.xlabel('Time [s]')
-    plt.ylabel('Mag Field [uT]')
-    plt.legend(framealpha=0.5)
+    if use_mag:
+        for i in xrange(3):
+            plt.plot(t_traj, y_traj[:, i + 6], color=colors[i+1],
+                label='mag[{:d}]'.format(i))
+        plt.xlabel('Time [s]')
+        plt.ylabel('Mag Field [uT]')
+        plt.legend(framealpha=0.5)
 
     ax4 = plt.subplot(3, 2, 4, sharex=ax)
     for i in [0, 1, 2]:
@@ -229,7 +238,7 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj):
 
     ax5 = plt.subplot(3, 2, 5, sharex=ax)
     for i in xrange(3):
-        plt.plot(t_traj, y_traj[:, i + 6], color=colors[i+1],
+        plt.plot(t_traj, y_traj[:, i + 3], color=colors[i+1],
             label='accel[{:d}]'.format(i))
     plt.xlabel('Time [s]')
     plt.ylabel('Accel [m / s**2]')
@@ -275,8 +284,17 @@ def main(args):
         data['accel_data'] = data['accel_data'] * 9.81
         # MPU gyro data is in degree second**-1, convert to radian second**-1
         data['gyro_data'] = np.deg2rad(data['gyro_data'])
-        y_traj = np.array([np.hstack((w, h, a)) for (w, h, a) in \
-            zip(data['gyro_data'], data['mag_data'], data['accel_data'])])
+        if args.use_mag:
+            y_traj = np.array([np.hstack((w, a, h)) for (w, a, h) in \
+                zip(data['gyro_data'], data['accel_data'], data['mag_data'])])
+        else:
+            y_traj = np.array([np.hstack((w, a)) for (w, a) in \
+                zip(data['gyro_data'], data['accel_data'])])
+        # Correct length pf y_traj if we got more sensor readings than
+        # time steps. This happens based on when the 
+        # logger was interrupted.
+        if y_traj.shape[0] > n_steps:
+            y_traj = y_traj[:n_steps]
         assert y_traj.shape[0] == n_steps
     elif args.meas_source == 'sim':
         dt=0.1
@@ -287,14 +305,15 @@ def main(args):
         raise ValueError
     
     # Create the estimator
-    est = create_estimator(dt)
+    est = create_estimator(dt, args.use_mag)
 
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
         run(est, args.meas_source, n_steps, dt, t_traj, y_traj)
 
     # Plot the results
-    plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj)
+    plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
+        args.use_mag)
     plt.show()
 
 
@@ -304,6 +323,8 @@ if __name__ == '__main__':
         required=True)
     parser.add_argument('--pkl_file', type=str, required=False,
         help='The pickle file containing the measurement data. Required if --meas_source is "pickle".')
+    parser.add_argument('--use_mag', help='Use magnetometer data',
+                    action='store_true')
     args = parser.parse_args()
     if args.meas_source == 'pickle' and args.pkl_file is None:
         parser.error('--pkl_file is required if --meas_source is "pickle"')
