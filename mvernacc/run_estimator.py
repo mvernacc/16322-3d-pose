@@ -150,8 +150,26 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False):
 
         # Control trajectory
         u_traj = np.zeros((n_steps, 3))
-        for i in xrange(100, 110):
-            u_traj[i] = np.deg2rad([10.0, 0, 0])
+        t_x = 5.
+        t_y = 20.
+        t_z = 35.
+        dur = 5.
+        u = np.deg2rad(90) / dur / dt
+        u_traj[int(t_x/dt)] = u * np.array([1,0,0])
+        u_traj[int((t_x + dur)/dt)] = -2*u * np.array([1,0,0])
+        u_traj[int((t_x + 2*dur)/dt)] = u * np.array([1,0,0])
+
+        u_traj[int(t_y/dt)] = u * np.array([0,1,0])
+        u_traj[int((t_y + dur)/dt)] = -2*u * np.array([0,1,0])
+        u_traj[int((t_y + 2*dur)/dt)] = u * np.array([0,1,0])
+
+        u_traj[int(t_z/dt)] = u * np.array([0,0,1])
+        u_traj[int((t_z + dur)/dt)] = -2*u * np.array([0,0,1])
+        u_traj[int((t_z + 2*dur)/dt)] = u * np.array([0,0,1])
+
+
+        # for i in xrange(100, 110):
+        #     u_traj[i] = np.deg2rad([10.0, 0, 0])
 
         # Sensor bias trajectories
         gyro_bias_traj = np.zeros((n_steps, 3))
