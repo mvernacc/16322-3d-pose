@@ -36,9 +36,11 @@ def rotation_dynamics(x, u, dt=0.01):
 
 def create_estimator(dt, use_mag):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
-    magneto_est = Magnetometer(h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
+    magneto_est = Magnetometer(noise_std_dev=3,
+        h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
     magneto_est.is_stateful = False
-    gyro_est = RateGyro(constant_bias=[0,0,0],
+    gyro_est = RateGyro(rate_noise_std_dev=np.deg2rad(0.02),
+        constant_bias=[0,0,0],
         dt=dt)
     accel_est = Accelerometer(a_bias_sensor=[0, 0, 0])
     accel_est.is_stateful = False
