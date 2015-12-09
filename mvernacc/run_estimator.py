@@ -23,12 +23,14 @@ from estimators.utils.plot_utils_16322 import plot_single_state_vs_time
 
 def rotation_dynamics(x, u, dt=0.01):
     # Attitude quaternion
-    q = x[0:4]
+    q_world2body = x[0:4]
     # Angular rate vector
-    w = x[4:7]
+    w_body = x[4:7]
+
+    w_world = quat_utils.rotate_frame(w_body, q_world2body)
     
-    q_next = quat_utils.quat_propagate(q, w, dt)
-    w_next = w + u * dt
+    q_next = quat_utils.quat_propagate(q_world2body, w_world, dt)
+    w_next = w_body + u * dt
 
     x_next = np.hstack((q_next, w_next))
     return x_next
@@ -301,6 +303,10 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     ypr_est = np.zeros((len(t_traj), 3))
     for i in xrange(len(t_traj)):
         ypr_est[i] = tb.quat2euler(x_est_traj[i, :4])
+    if x_traj is not None:
+        ypr_true = np.zeros((len(t_traj), 3))
+        for i in xrange(len(t_traj)):
+            ypr_true[i] = tb.quat2euler(x_traj[i, :4])
     # Find yaw, pitch, and roll covariance
     Q_ypr = np.zeros((len(t_traj), 3, 3))
     # yaw about z
@@ -310,6 +316,9 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     # roll about x
     Q_ypr[:,2,2] = Q_traj[:,0,0]
     for i in xrange(3):
+        if x_traj is not None:
+            plt.plot(t_traj, ypr_true[:,i] * r2d, 
+                color=angle_colors[i], label=angle_names[i] + ' true')
         plot_single_state_vs_time(ax6, t_traj, ypr_est * r2d, Q_ypr * r2d**2,
             i, color=angle_colors[i], label=angle_names[i] + ' est',
             linestyle='--')
