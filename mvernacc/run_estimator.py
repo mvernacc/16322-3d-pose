@@ -38,7 +38,7 @@ def create_estimator(dt, use_mag):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
     magneto_est = Magnetometer(noise_std_dev=3,
         h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
-    magneto_est.is_stateful = False
+    magneto_est.is_stateful = True
     gyro_est = RateGyro(rate_noise_std_dev=np.deg2rad(0.02),
         constant_bias=[0,0,0],
         dt=dt)
@@ -53,12 +53,15 @@ def create_estimator(dt, use_mag):
     # Number of system states.
     n_system_states = 7
     # Number of sensor bias states.
-    n_sensor_states = 3
+    if use_mag:
+        n_sensor_states = 6
+    else:
+        n_sensor_states = 3
 
     if use_mag:
         est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
             [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states,
-            [[7, 8, 9], [], []], n_sensor_states,
+            [[7, 8, 9], [], [10, 11, 12]], n_sensor_states,
             lambda x, u: rotation_dynamics(x, u, dt),
             W,
             1)
@@ -81,7 +84,15 @@ def create_estimator(dt, use_mag):
     system_state_init_std_dev = np.hstack((np.deg2rad([30., 30., 30.]), 
         np.deg2rad([0.1, 0.1, 0.1])))
     # The std. dev. uncertainty of the sensor bias states.
-    sensor_state_init_std_dev = np.deg2rad([5., 5., 5.])
+    # [units: radian second**-1]
+    gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
+    # [units: microtesla]
+    mag_bias_std_dev = np.array([10., 10., 10.])
+    if use_mag:
+        sensor_state_init_std_dev = np.hstack((
+            gyro_bias_std_dev, mag_bias_std_dev))
+    else:
+        sensor_state_init_std_dev = gyro_bias_std_dev
     Q_init = np.diag(np.concatenate((
         system_state_init_std_dev,
         sensor_state_init_std_dev
@@ -222,6 +233,9 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
         for i in xrange(3):
             plt.plot(t_traj, y_traj[:, i + 6], color=colors[i+1],
                 label='mag[{:d}]'.format(i))
+            plot_single_state_vs_time(ax3, t_traj, x_est_traj, Q_traj_padded, i+10,
+                color=colors[i+1], label='mag_bias[{:d}] est'.format(i),
+                linestyle='--')
         plt.xlabel('Time [s]')
         plt.ylabel('Mag Field [uT]')
         plt.legend(framealpha=0.5)
