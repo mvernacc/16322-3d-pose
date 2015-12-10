@@ -132,7 +132,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
         gyro_sim = RateGyro(dt=dt)
         magneto_sim = Magnetometer(h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
         magneto_sim.is_stateful = False
-        accel_sim = Accelerometer()
+        accel_sim = Accelerometer(a_bias_sensor=[0, 0, 0])
         accel_sim.is_stateful = False
         # Number of system states.
         n_system_states = 7
@@ -379,8 +379,19 @@ def main(args):
             args.use_mag, args.sim_type)
 
     # Plot the results
+    plt.figure(figsize=(4*4, 3*4))
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
         args.use_mag)
+    name = ''
+    if args.sim_type is not None:
+        name = args.sim_type
+    if args.pkl_file is not None:
+        if 'static' in args.pkl_file:
+            name = 'static'
+        if 'xyz90' in args.pkl_file:
+            name = 'xyz90'
+    plt.savefig('est_result_{:s}_{:s}.png'.format(args.meas_source, name))
+    plt.savefig('est_result_{:s}_{:s}.pdf'.format(args.meas_source, name))
     plt.show()
 
 
