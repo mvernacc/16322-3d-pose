@@ -117,7 +117,7 @@
 
 % *** MATH PACKAGES ***
 %
-%\usepackage{amsmath}
+\usepackage{amsmath}
 % A popular package from the American Mathematical Society that provides
 % many useful and powerful commands for dealing with mathematics.
 %
@@ -135,7 +135,7 @@
 
 % *** SPECIALIZED LIST PACKAGES ***
 %
-%\usepackage{algorithmic}
+\usepackage{algorithmicx}
 % algorithmic.sty was written by Peter Williams and Rogerio Brito.
 % This package provides an algorithmic environment fo describing algorithms.
 % You can use the algorithmic environment in-text or within a figure
@@ -258,6 +258,8 @@
 
 % *** Other packages ***
 \usepackage{siunitx}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
 
 % *** Do not adjust lengths that control margins, column widths, etc. ***
 % *** Do not use packages that alter fonts (such as pslatex).         ***
@@ -278,7 +280,7 @@
 % not capitalized unless they are the first or last word of the title.
 % Linebreaks \\ can be used within to get better formatting as desired.
 % Do not put math or special symbols in the title.
-\title{Unscented Kalman Filter for 3D Pose Estimation\\16.322 Final Project}
+\title{Unscented Kalman Filter for 3D Attitude Estimation\\16.322 Final Project}
 
 
 % author names and affiliations
@@ -317,7 +319,7 @@ The abstract goes here.
 
 
 \section{Introduction}
-The estimation of an object's 3D pose (rotation and translation) relative to a global reference frame is an important problem in robotics and aerospace engineering. This estimation task is called navigation. Satellites, launch vehicles, manned aircraft and UAVs need pose information in order to control their trajectories and to point sensors, communications equipment and weapons at targets.\\
+The estimation of an object's 3D pose (rotation and translation) relative to a global reference frame is an important problem in robotics and aerospace engineering. This estimation task is called navigation. Satellites, launch vehicles, manned aircraft and UAVs need pose information in order to control their trajectories and to point sensors, communications equipment and weapons at targets. In this project, I restrict the navigation task to estimating rotation only.\\
 
 Two broad classes of sensors are used in navigation: proprioceptive and exteroceptive \cite{Trawny05quat,Kelly-2010-711}. Proprioceptive sensors measure quantities internal to the robot or vehicle; exteroceptive senors measure the surrounding world.\\
 
@@ -338,11 +340,67 @@ To correct for drift, exteroceptive measurements are incorporated into the estim
   \item \emph{Odometry sensors} measure the incremental motion of the vehicle relative to the environment. On wheeled vehicles, encoders are used to count wheel revolutions. \emph{Visual odometry} uses optical flow algorithms to compute motion from camera data \cite{Dille_2009_6430}.
 \end{itemize}
 
+In this project, I use an IMU and magnetometer.\\
+
+Several estimators are used in navigation, generally depending on which sensors are available. Non-linear Kalman filters are the typical choice for systems with field, beacon and odometry sensors. Kalman filters work well for systems with approximately Gaussian sensor noise, which these sensors usually have. Mapping sensors require more sophisticated estimators because their measurement distributions are non-Gaussian (e.g. an environment with several similar-looking regions will produce a multi-modal distribution), particle filters are often used in this case.\\
+
+ In this project, I will use an Unscented Kalman filter (UKF). I choose the UKF over the Extended Kalman filter because it offers superior covariance estimation, and avoid the need to determine the Jacobians of the state transition and measurement functions.\\ 
 
 \section{Hardware}
+For my sensors, I use an MPU-9150 from InvenSense \cite{mpu9150}. SparkFun Electronics sells the sensor conveniently mounted on a breakout board (part number SEN-11486). The MPU-9150 contains a 3-axis MEMS rate gyro, 3-axis MEMS accelerometer, and a 3-axis Hall effect magnetometer.\\
+For computation I use a BeagleBone Black single board computer from Texas Instruments.\\
+
+\section{Coordinate Systems}
+I reference the following coordinate systems in my project. The notation for vectors is $\vec{r}^{A}$ indicates that a vector is written in frame A. The notation for quaternions is $q_{A2B}$ indicates the rotation which transforms vectors from frame A to B.
+\begin{equation}
+  \vec{r}^{B} = \textproc{RotateFrame}(\vec{r}^{A}, q_{A2B})
+\end{equation}
+
+\subsection{North East Down (NED)}
+The North-East-Down frame is an inertial, Cartesian, right-handed coordinate system.
+\begin{itemize}
+  \item The origin is at the location of the sensor (I am only considering rotations, not translations of the sensor).
+  \item The $x$ axis lies in the horizontal plane (i.e. locally tangent to the WGS84 ellipsoid) and points towards geographic (not magnetic) North.
+  \item The $z$ axis points towards the center of the Earth.
+  \item The $y$ axis completes the right-handed system.
+\end{itemize}
+
+\subsection{Sensor}
+The sensor frame is a non-inertial, Cartesian, right-handed coordinate system. The estimation task is to determine the rotation of the sensor frame relative to the NED frame
 
 \section{Sensor Models}
 \subsection{Accelerometer}
+I model the MEMS accelerometer measurement function as
+\begin{equation}
+  \vec{a}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{g}_{Earth}^{NED}, q_{NED2sensor}(t)) + \vec{\nu}_{accel}(t)
+\end{equation}
+where:
+\begin{itemize}
+  \item $\vec{a}_{meas}^{sensor}(t)$ is the acceleration measured in the sensor frame at time $t$.
+  \item $\vec{g}_{Earth}^{NED} = [0, 0, \SI{9.81}{\meter\per\second\squared}]$ is the Earth's gravitational field in the NED frame.
+  \item $q_{NED2sensor}(t)$ is the rotation from the NED frame to the sensor frame at time $t$.
+  \item $\nu_{accel}(t)$ is the accelerometer measurement noise.
+\end{itemize}
+
+Compared to the magnitude of the acceleration due to gravity, the bias of MEMS accelerometers is typically quite small \cite{mpu9150, UCAM-CL-TR-696}. Therefore I do not include bias terms in my accelerometer model. Further, I assume that the sensor only undergoes rotation, not translation. Any accidental accelerations (e.g. shaking of the sensor during rotation, centripetal acceleration) are modeled as noise. I mounted the sensor near the body's center of mass to minimize centripetal acceleration.\\
+
+The measurement noise is draw from
+\begin{equation}
+  \vec{\nu}_{accel} \sim \mathcal{N}(0,
+  \begin{bmatrix}
+    \sigma_{accel,d,x}^2 & 0 & 0 \\
+     0 & \sigma_{accel,d,y}^2 & 0 \\
+     0 & 0 & \sigma_{accel,d,z}^2 \\
+    \end{bmatrix}
+  )
+\end{equation}
+The measurement noise standard deviation is typically specified as a continuous-time Fourier spectral density $\sigma_{accel,c,*}$, with units of \si{\meter\per\second\squared\per\sqrt\second}. This can be converted to discrete time via:
+\begin{equation}
+  \sigma_{accel,d,*} = \sigma_{accel,c,*} \sqrt{\Delta t}
+\end{equation}
+where $\Delta t$ is the sampling time interval \cite{1642588}.
+
+
 
 \subsection{Rate Gyroscope}
 
