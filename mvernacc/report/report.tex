@@ -260,6 +260,7 @@
 \usepackage{siunitx}
 \usepackage{algpseudocode}
 \usepackage{algorithm}
+\usepackage{physics}
 
 % *** Do not adjust lengths that control margins, column widths, etc. ***
 % *** Do not use packages that alter fonts (such as pslatex).         ***
@@ -371,9 +372,10 @@ The sensor frame is a non-inertial, Cartesian, right-handed coordinate system. T
 \section{Sensor Models}
 \subsection{Accelerometer}
 I model the MEMS accelerometer measurement function as
-\begin{equation}
-  \vec{a}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{g}_{Earth}^{NED}, q_{NED2sensor}(t)) + \vec{\nu}_{accel}(t)
-\end{equation}
+\begin{multline}
+  \vec{a}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{g}_{Earth}^{NED}, q_{NED2sensor}(t)) \\
+  + \vec{\nu}_{accel}(t)
+\end{multline}
 where:
 \begin{itemize}
   \item $\vec{a}_{meas}^{sensor}(t)$ is the acceleration measured in the sensor frame at time $t$.
@@ -401,14 +403,45 @@ The measurement noise standard deviation is typically specified as a continuous-
 where $\Delta t$ is the sampling time interval \cite{1642588}.
 
 
-
 \subsection{Rate Gyroscope}
+I model the MEMS rate gyroscope measurement function as \cite{1642588}:
+\begin{equation}
+  \vec{\omega}_{meas}^{sensor}(t) = \vec{\omega}^{sensor}(t) + \vec{d} + \vec{b}(t) + \vec{\nu}_{gyro}(t)
+\end{equation}
+where:
+\begin{itemize}
+  \item $\vec{\omega}_{meas}^{sensor}(t)$ is the angular rate measured in the sensor frame at time $t$.
+  \item $\vec{\omega}^{sensor}(t)$ is the true angular rate of the sensor with respect to an inertial frame, at time $t$.
+  \item $\vec{d}$ is a constant bias.
+  \item $\vec{b}(t)$ is a time-evolving bias.
+  \item $\nu_{gyro}(t)$ is the gyro measurement noise.
+\end{itemize}
+
+I model the evolution of the bias as a stationary Gauss-Markov process \cite{1642588, park}:
+\begin{equation}
+  \dv{b}{t} = - \alpha b(t) + \vec{\eta_u}(t)
+\end{equation}
+where $\alpha$ is the inverse of the correlation time, and $\vec{\eta_u}(t)$ is the zero mean Gaussian bias walk noise. The sensor's correlation time and bias walk noise standard deviation are estimated in section \ref{sensor_char}.
+
 
 \subsection{Magnetometer}
-
+I model the magnetometer measurement function as:
+\begin{multline}
+  \vec{h}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{h}_{Earth}^{NED} + \vec{h}_{bias}^{NED}, q_{NED2sensor}(t)) \\
+  + \vec{h}_{bias}^{sensor} + \vec{\nu}_{mag}(t)
+\end{multline}
+where:
+\begin{itemize}
+  \item $\vec{h}_{meas}^{sensor}(t)$ is the magnetic field measured in the sensor frame at time $t$.
+  \item $\vec{h}_{Earth}^{NED}$ is the Earth's magnetic field in the NED frame. This value varies with time and geographic location. In Cambridge, MA in 2015, it is $\vec{h}_{Earth}^{NED} = [\SI{19.5}{\micro\tesla}, \SI{-5.1}{\micro\tesla}, \SI{48.2}{\micro\tesla}]$ \cite{wmm}.
+  \item $\vec{h}_{bias}^{NED},$ is a constant bias fixed to the NED frame.
+  \item $\vec{h}_{bias}^{sensor},$ is a constant bias which rotates with the sensor.
+  \item $\vec{\nu}_{mag}(t)$ is the magnetometer measurement noise.
+\end{itemize}
 
 
 \section{Sensor Characterization}
+\label{sensor_char}
 Allan variance \cite{UCAM-CL-TR-696}.
 
 \begin{figure}[!t]
@@ -477,6 +510,7 @@ Allan variance \cite{UCAM-CL-TR-696}.
 
 
 \section{Conclusion}
+mag model insufficient % better model: http://www.acsu.buffalo.edu/~johnc/mag_cal05.pdf.
 
 
 
