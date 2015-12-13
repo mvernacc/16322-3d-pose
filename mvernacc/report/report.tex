@@ -396,9 +396,10 @@ The measurement noise is draw from
     \end{bmatrix}
   )
 \end{equation}
-The measurement noise standard deviation is typically specified as a continuous-time Fourier spectral density $\sigma_{accel,c,*}$, with units of \si{\meter\per\second\squared\per\sqrt\second}. This can be converted to discrete time via:
+The measurement noise standard deviation is typically specified as a continuous-time Fourier spectral density $\sigma_{accel,c,*}$, with units of \si{\meter\per\second\squared\sqrt\second}. This can be converted to discrete time via:
 \begin{equation}
-  \sigma_{accel,d,*} = \sigma_{accel,c,*} \sqrt{\Delta t}
+  \label{eqn:cont_to_desc_noise}
+  \sigma_{accel,d,*} = \sigma_{accel,c,*} \frac{1}{\sqrt{\Delta t}}
 \end{equation}
 where $\Delta t$ is the sampling time interval \cite{1642588}.
 
@@ -442,7 +443,34 @@ where:
 
 \section{Sensor Characterization}
 \label{sensor_char}
-Allan variance \cite{UCAM-CL-TR-696}.
+I analyzed the noise properties of my sensors using the Allan variance technique \cite{UCAM-CL-TR-696}. The Allan variance of a signal is computed  according to algorithm \ref{avar}. The Allan variance is computed for a range of averaging times $\tau$, typically $10$ times the measurement interval to $0.1$ times the duration of the signal. The Allan deviation ($\sqrt{\textproc{Avar}(\tau)}$) is then plotted against $\tau$ on a log-log scale.\\
+
+\begin{algorithm}
+  \caption{Allan Variance}
+  \label{avar}
+  \begin{algorithmic}
+    \Function{Avar}{$\tau$}
+      \State Divide the data into $n$ bins of time length $\tau$
+      \For{each bin $b_i$}
+        \State $a_i \gets \Call{mean}{b_i}$
+      \EndFor
+      \State \Return $\frac{1}{2 (n-1)} \sum_{i=1}^{n-1} (a_{i+1} - a_{i})^2$
+      \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+The resulting Allan deviation plot has the general shape shown in figure \ref{allan_regions}. Given the time scales of my measurements, I expect to capture the white noise and bias stability regions. \\
+The values of the sensor's noise parameters can be read from the Allan Deviation plots. The continuous-time measurement noise Fourier spectral density $\sigma_{*,c,*}$ is the value at which the linear $-0.5$ slope portion of the plot passes through $\tau = \SI{1}{\second}$ \cite{UCAM-CL-TR-696}. I perform a linear best fit on the Allan Deviation for $\tau \in [\SI{0.1}{\second}, \SI{10}{\second}]$, and find the value of the best-fit line at $\tau = \SI{1}{\second}$. For comparison, I also compute the discrete-time measurement noise $\sigma_{*,d,*}$ by taking the standard deviation of the signal. The results of both calculations are presented in table \ref{table:measurement_noise}. For all sensors, the continuous- and discrete-time noise estimates are in agreement, i.e. equation \ref{eqn:cont_to_desc_noise} is approximately correct.\\
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=3in]{figures/allan_regions.png}
+  \DeclareGraphicsExtensions.
+  \caption{The typical regions of a $\log(\textproc{Adev}(\tau))$ vs $\tau$ plot, and their relation to signal noise characteristics. Reprinted from \cite{UCAM-CL-TR-696}.}
+  \label{allan_regions}
+\end{figure}
+
+The Allan deviation plots for my sensors are shown in figures \ref{gyro_data_allan} to \ref{mag_data_allan}. 
 
 \begin{figure}[!t]
   \centering
@@ -474,8 +502,8 @@ Allan variance \cite{UCAM-CL-TR-696}.
   \renewcommand{\arraystretch}{1.3}
   %if using array.sty, it might be a good idea to tweak the value of
   % \extrarowheight as needed to properly center the text within the cells
-  \caption{Sensor Noise Parameters. Specified parameters from \cite{mpu9150} unless otherwise noted.}
-  \label{table_example}
+  \caption{Sensor Measurement Noise Parameters. Specified parameters from \cite{mpu9150} unless otherwise noted.}
+  \label{table:measurement_noise}
   \centering
   % Some packages, such as MDW tools, offer better commands for making tables
   % than the plain LaTeX2e tabular which is used here.
@@ -487,9 +515,9 @@ Allan variance \cite{UCAM-CL-TR-696}.
     MPU-9150 Gyro $y$ axis & \SI{0.0162}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.106}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
     MPU-9150 Gyro $z$ axis & \SI{0.0180}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.141}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
     \hline
-    MPU-9150 Accel $x$ axis & \SI{4.56e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
-    MPU-9150 Accel $y$ axis & \SI{4.63e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
-    MPU-9150 Accel $z$ axis & \SI{6.66e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\per\sqrt\second} & \SI{0.0453}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $x$ axis & \SI{4.56e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $y$ axis & \SI{4.63e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $z$ axis & \SI{6.66e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0453}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
     \hline
     MPU-9150 Mag $x$ axis & \SI{0.136}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.913}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
     MPU-9150 Mag $y$ axis & \SI{0.143}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.923}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
