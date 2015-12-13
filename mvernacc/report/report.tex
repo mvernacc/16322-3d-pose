@@ -262,6 +262,12 @@
 \usepackage{algorithm}
 \usepackage{physics}
 
+% Custom commands for statistics
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+
+
 % *** Do not adjust lengths that control margins, column widths, etc. ***
 % *** Do not use packages that alter fonts (such as pslatex).         ***
 % There should be no need to do such things with IEEEtran.cls V1.6 and later.
@@ -420,9 +426,14 @@ where:
 
 I model the evolution of the bias as a stationary Gauss-Markov process \cite{1642588, park}:
 \begin{equation}
-  \dv{b}{t} = - \alpha b(t) + \vec{\eta_u}(t)
+  \dv{\vec{b}}{t} = - \alpha \vec{b}(t) + \vec{\eta_{u,c}}(t)
 \end{equation}
-where $\alpha$ is the inverse of the correlation time, and $\vec{\eta_u}(t)$ is the zero mean Gaussian bias walk noise. The sensor's correlation time and bias walk noise standard deviation are estimated in section \ref{sensor_char}.
+where $\alpha$ is the inverse of the correlation time, and $\vec{\eta_{u,c}}(t)$ is the zero mean Gaussian bias walk noise. The discrete-time version of this equation is \cite{1642588}:
+\begin{equation}
+  \vec{b}(t + \Delta t) = (1 - \alpha \Delta t) \vec{b}(t) + \vec{\eta_{u,d}}(t)
+\end{equation}
+
+The sensor's correlation time and bias walk noise standard deviation are estimated in section \ref{sensor_char}.
 
 
 \subsection{Magnetometer}
@@ -461,6 +472,17 @@ I analyzed the noise properties of my sensors using the Allan variance technique
 
 The resulting Allan deviation plot has the general shape shown in figure \ref{allan_regions}. Given the time scales of my measurements, I expect to capture the white noise and bias stability regions. \\
 The values of the sensor's noise parameters can be read from the Allan Deviation plots. The continuous-time measurement noise Fourier spectral density $\sigma_{*,c,*}$ is the value at which the linear $-0.5$ slope portion of the plot passes through $\tau = \SI{1}{\second}$ \cite{UCAM-CL-TR-696}. I perform a linear best fit on the Allan Deviation for $\tau \in [\SI{0.1}{\second}, \SI{10}{\second}]$, and find the value of the best-fit line at $\tau = \SI{1}{\second}$. For comparison, I also compute the discrete-time measurement noise $\sigma_{*,d,*}$ by taking the standard deviation of the signal. The results of both calculations are presented in table \ref{table:measurement_noise}. For all sensors, the continuous- and discrete-time noise estimates are in agreement, i.e. equation \ref{eqn:cont_to_desc_noise} is approximately correct.\\
+
+For sensor with bias walk, the Allan Deviation plot will have a flat $0$ slope region. The signal's bias instability $\sigma_{*,bi,*}$ is the minimum value of \textproc{Adev}, and the correlation time $1/\alpha$ is the value of $\tau$ at which the minimum occurs \cite{UCAM-CL-TR-696}. The continuous-time bias walk noise $\vec{\eta_u}(t)$ has standard deviation \cite{1642588}:
+\begin{equation}
+    \Var[\eta_{*,u,c,*}] = \sigma_{*,u,c,*}^2 = 2 \alpha \sigma_{*,bi,*}^2
+\end{equation}
+This is converted to discrete time by \cite{1642588}:
+\begin{equation}
+    \Var[\eta_{*,u,d,*}] = \sigma_{*,u,d,*}^2 = (\Delta t) (\sigma_{*,u,c,*}^2)
+\end{equation}
+The accelerometer and gyro Allan Deviation plots have a flat region, indicating that a bias walk process exists for these sensors. The magnetometer Allan Deviation plot does not have a flat region, and continues at a slope of $\approx -0.5$ for all observed $\tau$. This indicates that the magnetometer does not have a bias walk process, only a white noise process. This confirms my assumption that the magnetometer bias is independent of time.
+% TODO add table of gyro and accel correlation time and bias instability
 
 \begin{figure}[!t]
   \centering
