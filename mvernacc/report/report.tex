@@ -588,7 +588,36 @@ To avoid this, the unit quaternions must be mapped to a 3-D vector space. Fortun
 \end{align}
 The logarithm of a unit quaternion has real part 0, and complex parts equal to the axis-angle representation of the rotation. Because the real part is always zero, it can be dropped to represent the log-unit-quaternions as 3-vectors in $\mathrm{so(3)} = \mathbb{R}^3$.\\
 
-The modified quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions.
+Another issue is that the UKF must average state vectors. However, the unit quaternions are a redundant representation of $\mathrm{SO(3)}$, and a quaternion and its negative represent the same rotation. Before averaging quaternions, we must check their vector dot product, and negate one of the quaternions if it is negative.\\
+
+\subsection{Modified quaternion UKF algorithm}
+The modified quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions $d\mathcal{Q}^{(i)}$. Its propagation function is presented in algorithm \ref{alg:propdyn}. If there are $n$ non-attitude states, then the covariance $Q$ has dimension $(n+3) \times (n+3)$, the state estimate $\vec{x}^{est}$ has dimension $n+4$, and the sigma points $\vec{\mathcal{X}}^{(i)}$ have dimension $n+3$. States $0, 1, 2, 3$ are the attitude quaternion, other states are vector components or scalars. The diagonal entries $Q[0,0], Q[1,1], Q[2,2]$ represent the attitude estimate variance about the body-frame $x,y,z$ axes, with units of \si{\radian\squared}.\\
+
+\begin{algorithm}
+  \caption{Quaternion UKF Dynamics Propagation. }
+  \label{alg:propdyn}
+  \begin{algorithmic}
+    \Function{PropagateDynamics}{$\vec{x}_{k-1|k-1}^{est}, Q_{k-1|k-1}$}
+      \State $q_{k-1|k-1}^{est} \gets \vec{x}_{k-1|k-1}^{est}[0:4]$
+      \State Compute the sigma points $\vec{\mathcal{X}}^{(i)}_{k-1|k-1}$ from the covariance $Q_{k-1|k-1}$
+      \State $d\mathcal{Q}^{(i)}_{k-1|k-1} \gets \textproc{QuatExp}(\vec{\mathcal{X}}^{(i)}_{k-1|k-1}[0:3]) \quad \forall i$
+      \State $\mathcal{Q}^{(i)}_{k-1|k-1} \gets q_{k-1|k-1}^{est} \cdot d\mathcal{Q}^{(i)}_{k-1|k-1} \quad \forall i$
+      \State Propagate each state vector $[\mathcal{Q}^{(i)}_{k-1|k-1}, \vec{\mathcal{X}}^{(i)}_{k-1|k-1}[3:]]$ through the state transition function to step $k|k-1$.
+
+      \State $q_{k|k-1}^{est} \gets \textproc{QuatAvg}(\mathcal{Q}^{(i)}_{k|k-1} \quad \forall i)$
+      \State $\vec{x}_{k|k-1}^{est}[0:4] \gets q_{k|k-1}^{est}$
+      \State $\vec{x}_{k|k-1}^{est}[4:] \gets \textproc{Mean}(\vec{\mathcal{X}}^{(i)}_{k|k-1}[3:] \quad \forall i)$
+
+      \State $d\mathcal{Q}^{(i)}_{k|k-1} \gets (q_{k|k-1}^{est})^{-1} \cdot \mathcal{Q}^{(i)}_{k|k-1}$
+      \State $\vec{\mathcal{X}}^{(i)}_{k|k-1}[0:3] \gets \textproc{QuatLog}(d\mathcal{Q}^{(i)}_{k|k-1})$
+      \State Compute $Q_{k|k-1}$ from $\vec{\mathcal{X}}^{(i)}_{k|k-1}$
+
+      \Return $\vec{x}_{k|k-1}^{est}, Q_{k|k-1}$
+      \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+
 
 \begin{figure}[!t]
   \centering
