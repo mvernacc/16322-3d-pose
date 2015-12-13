@@ -261,6 +261,7 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{physics}
+\usepackage{amsfonts}
 
 % Custom commands for statistics
 \newcommand{\E}{\mathrm{E}}
@@ -571,8 +572,39 @@ The results of the bias walk analysis are presented in table \ref{table:bias_wal
 
 
 \section{Estimator Design}
+Because my system has nonlinear measurements and approximately Gaussian measurement noise, I use an Unscented Kalman Filter (UKF) as my estimator.
 
+\subsection{Quaternion State in the UKF}
+The use of quaternions to represent attitude state requires some modification to the standard UKF algorithm. First, the UKF assumes
+that the state space is a vector space, i.e. that all combinations of settings of the state variables are valid states. While the quaternions $\mathbb{H}$ are a 4-D vector space, only unit quaternions represent valid rotations in $\mathrm{SO(3)}$. Therefore, the attitude state space is the 3-D surface of the unit sphere in $\mathbb{H}$, i.e. it is a manifold, not a vector space.\\
 
+This invalidates the UKF's representation of uncertainty. The distribution of states should only include unit quaternions, so level-sets of likelihood should be 3-D patches on the surface of the unit sphere (figure \ref{fig:quat_uncert_3d}. This requires a 3-D representation of the attitude covariance. However, in the UKF the dimension of the covariance is equal to the dimension of the state. Therefore, the level-sets of likelihood would be 4-D ellipsoids, and the distribution of states would include many non-unit quaternions (figure \ref{fig:quat_uncert_4d}).\\
+
+To avoid this, the unit quaternions must be mapped to a 3-D vector space. Fortunately, the unit quaternions form a Lie group ($\mathrm{SO(3)}$), so their logarithms form a Lie algebra ($\mathrm{so(3)}$), which is a vector space (this duality is referred to as the exponential map). The logarithm of a quaternion is defined as follows: for a rotation of $\theta$ radians about a unit axis $\hat{n}$:
+\begin{align}
+    q &= [\cos(\frac{\theta}{2}), \hat{n} \sin(\frac{\theta}{2})] \\
+    \log(q) &= [\log(|q|), \theta \hat{n}]\\
+        &= [0, \theta \hat{n}]
+\end{align}
+The logarithm of a unit quaternion has real part 0, and complex parts equal to the axis-angle representation of the rotation. Because the real part is always zero, it can be dropped to represent the log-unit-quaternions as 3-vectors in $\mathrm{so(3)} = \mathbb{R}^3$.\\
+
+The modified quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/quat_uncert_3d.png}
+  \DeclareGraphicsExtensions.
+  \caption{An illustration of the 4-D unit sphere in $\mathbb{H}$, a unit quaternion (red), and its 3-D 1-$\sigma$ uncertainty region (pink). The region lies on the unit sphere.}
+  \label{fig:quat_uncert_3d}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/quat_uncert_4d.png}
+  \DeclareGraphicsExtensions.
+  \caption{A unit quaternion (red), and its 4-D 1-$\sigma$ uncertainty region. The region contains points which are not on the unit sphere.}
+  \label{fig:quat_uncert_4d}
+\end{figure}
 
 \section{Results}
 \subsection{Simulation Results}
