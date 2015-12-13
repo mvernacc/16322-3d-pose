@@ -619,9 +619,26 @@ The modified quaternion UKF \cite{1257247} represents attitude uncertainty with 
 
 \begin{algorithm}
   \caption{Quaternion UKF Measurement Update.}
-  \label{alg:propdyn}
+  \label{alg:updatemeas}
   \begin{algorithmic}
-    \Function{MeasurementUpdate}{$\vec{x}_{k|k-1}^{est}, Q_{k|k-1}, \vec{y}_{k}, R$}
+    \Function{UpdateMeasurement}{$\vec{x}_{k|k-1}^{est}, Q_{k|k-1}, \vec{y}_{k}, R$}
+      \State $q_{k|k-1}^{est} \gets \vec{x}_{k|k-1}^{est}[0:4]$
+      \State Compute the sigma points $\vec{\mathcal{X}}^{(i)}_{k|k-1}$ from the covariance $Q_{k|k-1}$
+      \State $d\mathcal{Q}^{(i)}_{k|k-1} \gets \textproc{QuatExp}(\vec{\mathcal{X}}^{(i)}_{k|k-1}[0:3]) \quad \forall i$
+      \State $\mathcal{Q}^{(i)}_{k|k-1} \gets q_{k|k-1}^{est} \cdot d\mathcal{Q}^{(i)}_{k|k-1} \quad \forall i$
+      \State Map each state vector $[\mathcal{Q}^{(i)}_{k|k-1}, \vec{\mathcal{X}}^{(i)}_{k|k-1}[3:]]$ through the measurement function to get the measurement sigma points $\vec{\mathcal{Y}}^{(i)}_{k}$.
+      \State $\vec{y}^{est}_{k} = \textproc{Mean}(\vec{\mathcal{Y}}^{(i)}_{k} \quad \forall i)$
+      \State Compute $Q_{yy}$ from $\vec{\mathcal{Y}}^{(i)}_{k}$ and $R$.
+      \State Compute $Q_{xy}$ from $\vec{\mathcal{X}}^{(i)}_{k|k-1}$ and $\vec{\mathcal{Y}}^{(i)}_{k}$.
+      \State $K \gets Q_{xy} Q_{yy}^{-1}$
+      \State $d\vec{\mathcal{X}} \gets K (\vec{y}_{k} - \vec{y}^{est}_{k})^T$
+      \State $dq = \textproc{QuatExp}(d\vec{\mathcal{X}}[0:3])$
+      \State $q_{k|k}^{est} \gets q_{k|k-1}^{est} \cdot dq$
+      \State $\vec{x}^{est}_{k|k}[0:4] \gets q_{k|k}^{est}$
+      \State $\vec{x}^{est}_{k|k}[4:] \gets \vec{x}^{est}_{k|k-1}[4:] + d\vec{\mathcal{X}}[3:]$
+      \State $Q_{k|k} \gets Q_{k|k-1} - K Q_{yy} K^T$
+
+      \Return $\vec{x}_{k|k}^{est}, Q_{k|k}$
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
