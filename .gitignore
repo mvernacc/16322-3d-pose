@@ -52,3 +52,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+#LaTeX
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.blg
+*.bbl
+*.aux
