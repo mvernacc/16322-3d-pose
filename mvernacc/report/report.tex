@@ -588,6 +588,22 @@ To avoid this, the unit quaternions must be mapped to a 3-D vector space. Fortun
 \end{align}
 The logarithm of a unit quaternion has real part 0, and complex parts equal to the axis-angle representation of the rotation. Because the real part is always zero, it can be dropped to represent the log-unit-quaternions as 3-vectors in $\mathrm{so(3)} = \mathbb{R}^3$.\\
 
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/quat_uncert_3d.png}
+  \DeclareGraphicsExtensions.
+  \caption{An illustration of the 4-D unit sphere in $\mathbb{H}$, a unit quaternion (red), and its 3-D 1-$\sigma$ uncertainty region (pink). The region lies on the unit sphere.}
+  \label{fig:quat_uncert_3d}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/quat_uncert_4d.png}
+  \DeclareGraphicsExtensions.
+  \caption{A unit quaternion (red), and its 4-D 1-$\sigma$ uncertainty region. The region contains points which are not on the unit sphere.}
+  \label{fig:quat_uncert_4d}
+\end{figure}
+
 Another issue is that the UKF must average state vectors. However, the unit quaternions are a redundant representation of $\mathrm{SO(3)}$, and a quaternion and its negative represent the same rotation. Before averaging quaternions, we must check their vector dot product, and negate one of the quaternions if it is negative.\\
 
 \subsection{Modified quaternion UKF algorithm}
@@ -643,21 +659,7 @@ The modified quaternion UKF \cite{1257247} represents attitude uncertainty with 
   \end{algorithmic}
 \end{algorithm}
 
-\begin{figure}[!t]
-  \centering
-  \includegraphics[width=2.5in]{figures/quat_uncert_3d.png}
-  \DeclareGraphicsExtensions.
-  \caption{An illustration of the 4-D unit sphere in $\mathbb{H}$, a unit quaternion (red), and its 3-D 1-$\sigma$ uncertainty region (pink). The region lies on the unit sphere.}
-  \label{fig:quat_uncert_3d}
-\end{figure}
 
-\begin{figure}[!t]
-  \centering
-  \includegraphics[width=2.5in]{figures/quat_uncert_4d.png}
-  \DeclareGraphicsExtensions.
-  \caption{A unit quaternion (red), and its 4-D 1-$\sigma$ uncertainty region. The region contains points which are not on the unit sphere.}
-  \label{fig:quat_uncert_4d}
-\end{figure}
 
 \section{Results}
 \subsection{Simulation Results}
