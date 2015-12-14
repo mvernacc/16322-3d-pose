@@ -693,14 +693,29 @@ The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90}
 \end{figure*}
 
 \subsection{Experimental Results}
+The experimental static trajectory is shown in figure \ref{fig:est_result_pickle_static}. Note that although the accelerometer has negligible bias walk, it does have a significant constant bias, which my sensor model and state augmentation fails to account for. This causes a $\SI{9.5}{\degree}$ roll error. Also note the large yaw uncertainty, as seen in the simulated static case.\\
 
+The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90}. Note that although the magnetometer bias uncertainty is low, the magnetometer bias estimate is incorrect, and therefore the yaw estimate is incorrect ($\approx \SI{0}{\degree}$ instead of $\approx \SI{-45}{\degree}$). However, the gyro measurements enable the change in yaw from $t = \SI{18}{\second}$ to $t = \SI{22}{\second}$ to correctly be $\SI{90}{\degree}$. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{12}{\second}$ when $pitch=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity. 
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=8in]{figures/est_result_pickle_static.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Estimator outputs and experimental measurements for the static trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_pickle_static}
+\end{figure*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=8in]{figures/est_result_pickle_xyz90.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Estimator outputs and experimental measurements for the xyz90 trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_pickle_xyz90}
+\end{figure*}
 
 
 \section{Conclusion}
-mag model insufficient % better model: http://www.acsu.buffalo.edu/~johnc/mag_cal05.pdf.
-
-
-
+I have successfully implemented the quaternion based UKF described in \cite{1257247}. The estimator performs well (attitude error $< \SI{3}{\degree}$) on simulated data. However, the estimator has poor yaw performance on experimental data, because my magnetometer model is insufficient to properly estimate the bias of that sensor. Future work on this project should include an improved magnetometer model, perhaps the model described in \cite{Crassidis2005}.
 
 
 % conference papers do not normally have an appendix
