@@ -659,7 +659,8 @@ The modified quaternion UKF \cite{1257247} represents attitude uncertainty with 
   \end{algorithmic}
 \end{algorithm}
 
-
+\subsection{Sensor Bias Estimation}
+I augment the system state $[q_{NED2sensor}, \vec{\omega}^{sensor}]$ with the gyroscope and magnetometer bias parameters $[\vec{b}, \vec{h}^{sensor}_{bias}]$ and run the UKF on the augmented state. This allows the biases to be estimated on-the-fly without the need for pre-calibration. It also accounts for the time-varying nature of the gyroscope bias. However, this approach requires the system to be in motion. The system's absolute rotation about the gravity vector is only observable though magnetometer measurements. If the system does not move, only one ($\pm$ noise) magnetometer measurement is observed. From this single measurement, it is impossible to determine both the magnetometer bias parameters and the rotation about $\vec{g}$. Once measurements from several different orientations have been collected, the estimator has sufficient information to determine both the rotation about $\vec{g}$ and the magnetometer bias.
 
 \section{Results}
 \subsection{Simulation Results}
