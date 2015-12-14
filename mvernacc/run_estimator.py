@@ -39,7 +39,7 @@ def rotation_dynamics(x, u, dt=0.01):
 def create_estimator(dt, use_mag):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
     magneto_est = Magnetometer(noise_std_dev=3,
-        h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
+        b=[0, 0, 0], D=np.zeros((3,3)))
     magneto_est.is_stateful = True
     gyro_est = RateGyro(rate_noise_std_dev=np.deg2rad(0.02),
         constant_bias=[0,0,0],
@@ -56,14 +56,14 @@ def create_estimator(dt, use_mag):
     n_system_states = 7
     # Number of sensor bias states.
     if use_mag:
-        n_sensor_states = 6
+        n_sensor_states = 12
     else:
         n_sensor_states = 3
 
     if use_mag:
         est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
             [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states,
-            [[7, 8, 9], [], [10, 11, 12]], n_sensor_states,
+            [[7, 8, 9], [], range(10, 19)], n_sensor_states,
             lambda x, u: rotation_dynamics(x, u, dt),
             W,
             1)
@@ -97,7 +97,7 @@ def create_estimator(dt, use_mag):
     # [units: radian second**-1]
     gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
     # [units: microtesla]
-    mag_bias_std_dev = np.array([10., 10., 10.])
+    mag_bias_std_dev = np.array(np.hstack(([5.]*3, [0.2]*6)))
     if use_mag:
         sensor_state_init_std_dev = np.hstack((
             gyro_bias_std_dev, mag_bias_std_dev))
@@ -130,7 +130,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
 
         # Create the sensors for the simulation (unknown, random bias parameters). 
         gyro_sim = RateGyro(dt=dt)
-        magneto_sim = Magnetometer(h_bias_ned=[0, 0, 0], h_bias_sensor=[0, 0, 0])
+        magneto_sim = Magnetometer(b=[10., 10., 10.], D=0.1*np.ones((3,3)))
         magneto_sim.is_stateful = False
         accel_sim = Accelerometer(a_bias_sensor=[0, 0, 0])
         accel_sim.is_stateful = False
