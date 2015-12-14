@@ -13,6 +13,8 @@ import cPickle as pickle
 
 from estimators.sensor_models.sensor_interface import KalmanSensors
 from estimators.sensor_models.magnetometer import Magnetometer
+from estimators.sensor_models.magnetometer import MagCalUKF
+from estimators.sensor_models.magnetometer import bD_to_sensor_state_vector, sensor_state_vector_to_bD
 from estimators.sensor_models.rate_gyro import RateGyro
 from estimators.sensor_models.accelerometer import Accelerometer
 
@@ -40,7 +42,7 @@ def create_estimator(dt, use_mag):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
     magneto_est = Magnetometer(noise_std_dev=3,
         b=[0, 0, 0], D=np.zeros((3,3)))
-    magneto_est.is_stateful = True
+    magneto_est.is_stateful = False
     gyro_est = RateGyro(rate_noise_std_dev=np.deg2rad(0.02),
         constant_bias=[0,0,0],
         dt=dt)
@@ -54,16 +56,13 @@ def create_estimator(dt, use_mag):
 
     # Number of system states.
     n_system_states = 7
-    # Number of sensor bias states.
-    if use_mag:
-        n_sensor_states = 12
-    else:
-        n_sensor_states = 3
+    # Number of sensor bias states
+    n_sensor_states = 3
 
     if use_mag:
         est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
             [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states,
-            [[7, 8, 9], [], range(10, 19)], n_sensor_states,
+            [[7, 8, 9], [], []], n_sensor_states,
             lambda x, u: rotation_dynamics(x, u, dt),
             W,
             1)
@@ -93,16 +92,12 @@ def create_estimator(dt, use_mag):
         [roll_init_std_dev, pitch_init_std_dev, yaw_init_std_dev],
         body_rate_init_std_dev
         ))
+
     # The std. dev. uncertainty of the sensor bias states.
     # [units: radian second**-1]
     gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
-    # [units: microtesla]
-    mag_bias_std_dev = np.array(np.hstack(([5.]*3, [0.2]*6)))
-    if use_mag:
-        sensor_state_init_std_dev = np.hstack((
-            gyro_bias_std_dev, mag_bias_std_dev))
-    else:
-        sensor_state_init_std_dev = gyro_bias_std_dev
+    sensor_state_init_std_dev = gyro_bias_std_dev
+
     Q_init = np.diag(np.concatenate((
         system_state_init_std_dev,
         sensor_state_init_std_dev
@@ -118,11 +113,20 @@ def create_estimator(dt, use_mag):
         est_sensors.noise_cov,
         )
 
-    return est
+    # If we are using the magnetometer, also create a magnetometer
+    # calibration estimator.
+    if use_mag:
+        magcal = MagCalUKF(magneto_est.noise_cov, np.linalg.norm(magneto_est.h_earth_ned),
+            b=[9., 10., 11.], D=0.12*np.ones((3,3)))
+
+    if use_mag:
+        return (est, magcal)
+    else:
+        return est
 
 
 def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
-    sim_type='static'):
+    magcal=None, sim_type='static'):
     # Set up the measurement source
     if meas_source == 'sim':
         # Time
@@ -183,6 +187,9 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
 
         # Sensor bias trajectories
         gyro_bias_traj = np.zeros((n_steps, 3))
+        if use_mag:
+            magcal_x_traj = np.zeros((n_steps, len(magcal.ukf.x_est)))
+            magcal_x_traj[0] = bD_to_sensor_state_vector(magneto_sim.b, magneto_sim.D)
 
         # Measurement trajectory
         y_traj = np.zeros((n_steps,
@@ -201,6 +208,11 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
     x_est_traj[0] = est.x_est
     Q_traj = np.zeros((n_steps, len(est.x_est)-1, len(est.x_est)-1))
     Q_traj[0] = est.Q
+    if use_mag:
+        magcal_x_est_traj = np.zeros((n_steps, len(magcal.ukf.x_est)))
+        magcal_x_est_traj[0] = magcal.ukf.x_est
+        magcal_Q_traj = np.zeros((n_steps, len(magcal.ukf.x_est), len(magcal.ukf.x_est)))
+        magcal_Q_traj[0] = magcal.ukf.Q
 
     # Run the fitler
     for i in xrange(1, n_steps):
@@ -209,6 +221,8 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
             # Update sensor state
             sim_sensors.update_sensor_state(x_traj[i-1])
             gyro_bias_traj[i] = gyro_sim.bias + gyro_sim.constant_bias
+            if use_mag:
+                magcal_x_traj[i] = bD_to_sensor_state_vector(magneto_sim.b, magneto_sim.D)
             y_traj[i] = sim_sensors.add_noise(sim_sensors.measurement_function(x_traj[i-1]))
             # Simulate the true dynamics.
             x_traj[i] = rotation_dynamics(x_traj[i-1], u_traj[i], dt)
@@ -219,9 +233,13 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
         # Update filter estimate.
         est.propagate_dynamics(np.array([0, 0, 0]))
         est.update_measurement(y_traj[i])
+        if use_mag:
+            magcal.update(y_traj[i, 6:9])
+            magcal_x_est_traj[i] = magcal.ukf.x_est
+            magcal_Q_traj[i] = magcal.ukf.Q
         # Record the estimates.
         x_est_traj[i] = est.x_est
-        Q_traj[i] = est.Q        
+        Q_traj[i] = est.Q
 
     print 'Final state est = '
     print est.x_est
@@ -229,14 +247,20 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
     print est.Q
 
     if meas_source == 'sim':
-        return (t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj)
+        if use_mag:
+            return (t_traj, x_est_traj, Q_traj, magcal_x_est_traj, magcal_Q_traj, y_traj, x_traj, gyro_bias_traj, magcal_x_traj)
+        else:
+            return (t_traj, x_est_traj, Q_traj, None, None, y_traj, x_traj, gyro_bias_traj, None)
     elif meas_source == 'pickle':
-        return (t_traj, x_est_traj, Q_traj, y_traj, None, None)
+        if use_mag:
+            return (t_traj, x_est_traj, Q_traj, magcal_x_est_traj, magcal_Q_traj, y_traj, None, None, magcal_x_traj)
+        else:
+            return (t_traj, x_est_traj, Q_traj, None, None, y_traj, None, None, None)
     else:
         raise ValueError
 
 
-def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_mag):
+def plot_traj(t_traj, x_est_traj, Q_traj, magcal_x_est_traj, magcal_Q_traj, y_traj, x_traj, gyro_bias_traj, magcal_x_traj, use_mag):
     # Radian to degree conversion
     r2d = 180.0 / np.pi
 
@@ -275,9 +299,12 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
         for i in xrange(3):
             plt.plot(t_traj, y_traj[:, i + 6], color=colors[i+1],
                 label='mag[{:d}]'.format(i))
-            plot_single_state_vs_time(ax3, t_traj, x_est_traj, Q_traj_padded, i+10,
+            plot_single_state_vs_time(ax3, t_traj, magcal_x_est_traj, magcal_Q_traj, i,
                 color=colors[i+1], label='mag_bias[{:d}] est'.format(i),
                 linestyle='--')
+            if magcal_x_traj is not None:
+                plt.plot(t_traj, magcal_x_traj[:,i], color=colors[i+1],
+                    label='mag_bias[{:d}] true'.format(i))
         plt.xlabel('Time [s]')
         plt.ylabel('Mag Field [uT]')
         plt.legend(framealpha=0.5)
@@ -371,16 +398,20 @@ def main(args):
         raise ValueError
     
     # Create the estimator
-    est = create_estimator(dt, args.use_mag)
+    if args.use_mag:
+        est, magcal = create_estimator(dt, args.use_mag)
+    else:
+        est = create_estimator(dt, args.use_mag)
+        magcal = None
 
     # Run the estimator
-    t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
+    t_traj, x_est_traj, Q_traj, magcal_x_est_traj, magcal_Q_traj, y_traj, x_traj, gyro_bias_traj, magcal_x_traj = \
         run(est, args.meas_source, n_steps, dt, t_traj, y_traj,
-            args.use_mag, args.sim_type)
+            args.use_mag, magcal, args.sim_type)
 
     # Plot the results
     plt.figure(figsize=(4*4, 3*4))
-    plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
+    plot_traj(t_traj, x_est_traj, Q_traj, magcal_x_est_traj, magcal_Q_traj, y_traj, x_traj, gyro_bias_traj, magcal_x_traj,
         args.use_mag)
     name = ''
     if args.sim_type is not None:
