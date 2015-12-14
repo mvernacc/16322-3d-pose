@@ -116,8 +116,7 @@ def create_estimator(dt, use_mag):
     # If we are using the magnetometer, also create a magnetometer
     # calibration estimator.
     if use_mag:
-        magcal = MagCalUKF(magneto_est.noise_cov, np.linalg.norm(magneto_est.h_earth_ned),
-            b=[9., 10., 11.], D=0.12*np.ones((3,3)))
+        magcal = MagCalUKF(magneto_est.noise_cov, np.linalg.norm(magneto_est.h_earth_ned))
 
     if use_mag:
         return (est, magcal)
@@ -179,6 +178,11 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
             u_traj[int(t_z/dt)] = u * np.array([0,0,1])
             u_traj[int((t_z + dur)/dt)] = -2*u * np.array([0,0,1])
             u_traj[int((t_z + 2*dur)/dt)] = u * np.array([0,0,1])
+
+        elif sim_type == 'tumble':
+            for i in xrange(n_steps):
+                if np.random.rand() < 2e-2:
+                    u_traj[i] = 1000 * dt**2 * (np.random.rand(3) - 0.5)
         else:
             raise ValueError
 
@@ -432,7 +436,7 @@ if __name__ == '__main__':
         required=True)
     parser.add_argument('--pkl_file', type=str, required=False,
         help='The pickle file containing the measurement data. Required if --meas_source is "pickle".')
-    parser.add_argument('--sim_type', type=str, choices=['static', 'xyz90'],
+    parser.add_argument('--sim_type', type=str, choices=['static', 'xyz90', 'tumble'],
         required=False,
         help='Which simulation to run. Required if --meas_source is "sim".')
     parser.add_argument('--use_mag', help='Use magnetometer data',
