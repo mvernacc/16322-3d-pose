@@ -252,7 +252,13 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
             raise ValueError
         # Update filter estimate.
         est.propagate_dynamics(np.array([0, 0, 0]))
+        if type(est) is UnscentedKalmanFilter:
+            # Normalize the quaternion state
+            est.x_est[0:4] /= np.linalg.norm(est.x_est[0:4])
         est.update_measurement(y_traj[i])
+        if type(est) is UnscentedKalmanFilter:
+            # Normalize the quaternion state
+            est.x_est[0:4] /= np.linalg.norm(est.x_est[0:4])
         # Record the estimates.
         x_est_traj[i] = est.x_est
         Q_traj[i] = est.Q        
