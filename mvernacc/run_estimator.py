@@ -12,7 +12,7 @@ import argparse
 import cPickle as pickle
 
 from estimators.sensor_models.sensor_interface import KalmanSensors
-from estimators.sensor_models.magnetometer import Magnetometer
+from estimators.sensor_models.magnetometer import Magnetometer, calibrate_data
 from estimators.sensor_models.rate_gyro import RateGyro
 from estimators.sensor_models.accelerometer import Accelerometer
 
@@ -120,7 +120,7 @@ def create_estimator(dt, use_mag, mag_cal):
         est_sensors.noise_cov,
         )
 
-    return est
+    return (est, est_sensors)
 
 
 def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
@@ -243,7 +243,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
         raise ValueError
 
 
-def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_mag):
+def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_mag, est_sensors):
     # Radian to degree conversion
     r2d = 180.0 / np.pi
 
@@ -279,9 +279,15 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
 
     ax3 = plt.subplot(3, 2, 3, sharex=ax)
     if use_mag:
+        # Calibrated mag data.
+        mag_data_post_cal = calibrate_data(y_traj[:, 6:9], est_sensors.sensors[2].b,
+            est_sensors.sensors[2].D)
         for i in xrange(3):
             plt.plot(t_traj, y_traj[:, i + 6], color=colors[i+1],
-                label='mag[{:d}]'.format(i))
+                label='mag[{:d}] raw'.format(i))
+            plt.plot(t_traj, mag_data_post_cal[:, i], color=colors[i+1],
+                label='mag[{:d}] calib'.format(i),
+                linestyle='--')
         plt.xlabel('Time [s]')
         plt.ylabel('Mag Field [uT]')
         plt.legend(framealpha=0.5)
@@ -375,7 +381,7 @@ def main(args):
         raise ValueError
     
     # Create the estimator
-    est = create_estimator(dt, args.use_mag, args.mag_cal)
+    est, est_sensors = create_estimator(dt, args.use_mag, args.mag_cal)
 
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
@@ -385,7 +391,7 @@ def main(args):
     # Plot the results
     plt.figure(figsize=(4*4, 3*4))
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
-        args.use_mag)
+        args.use_mag,est_sensors)
     name = ''
     if args.sim_type is not None:
         name = args.sim_type
