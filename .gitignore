@@ -61,3 +61,7 @@ target/
 *.blg
 *.bbl
 *.aux
+
+# Ignore the plots saved by run_estimator
+mvernacc/est_result*.pdf
+mvernacc/est_result*.png
