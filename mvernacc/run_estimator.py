@@ -17,6 +17,7 @@ from estimators.sensor_models.rate_gyro import RateGyro
 from estimators.sensor_models.accelerometer import Accelerometer
 
 from estimators.kraft_quat_ukf import KraftQautUKF
+from estimators.nonlinear_kalman import UnscentedKalmanFilter
 from estimators.utils import quat_utils
 from estimators.utils.plot_utils_16322 import plot_single_state_vs_time
 
@@ -36,7 +37,7 @@ def rotation_dynamics(x, u, dt=0.01):
     return x_next
 
 
-def create_estimator(dt, use_mag, mag_cal):
+def create_estimator(dt, use_mag, mag_cal, which_est):
     # Create the sensors for the Kalman filter estimator (known bias parameters).
     if mag_cal is None:
         magneto_est = Magnetometer(noise_std_dev=3,
@@ -59,14 +60,23 @@ def create_estimator(dt, use_mag, mag_cal):
     accel_est.is_stateful = False
 
     # System process noise covariance
-    process_std_dev = np.hstack((np.deg2rad([10, 10, 10])*dt, 
-        np.deg2rad([10, 10, 10])*dt))
+    if which_est == 'kraft_quat_ukf':
+        process_std_dev = np.hstack((np.deg2rad([10, 10, 10])*dt, 
+            np.deg2rad([10, 10, 10])*dt))
+    elif which_est == 'ukf':
+        process_std_dev = np.hstack((np.ones(4)*0.1*dt, 
+            np.deg2rad([10, 10, 10])*dt))
     W = np.diag(process_std_dev)**2
 
     # Number of system states.
     n_system_states = 7
     # Number of sensor bias states.
     n_sensor_states = 3
+    # Number of redundant states
+    if which_est == 'kraft_quat_ukf':
+        n_redundant_states = 1
+    elif which_est == 'ukf':
+        n_redundant_states = 0
 
     if use_mag:
         est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
@@ -74,14 +84,14 @@ def create_estimator(dt, use_mag, mag_cal):
             [[7, 8, 9], [], []], n_sensor_states,
             lambda x, u: rotation_dynamics(x, u, dt),
             W,
-            1)
+            n_redundant_states)
     else:
         est_sensors = KalmanSensors([gyro_est, accel_est],
             [[4, 5, 6], [0, 1, 2, 3]], n_system_states,
             [[7, 8, 9], []], n_sensor_states,
             lambda x, u: rotation_dynamics(x, u, dt),
             W,
-            1)
+            n_redundant_states)
 
     # Initial state estimate. Set the sensor bias states
     # to an initial estimate of zero.
@@ -97,10 +107,16 @@ def create_estimator(dt, use_mag, mag_cal):
     pitch_init_std_dev = np.deg2rad(1.0)
     roll_init_std_dev = np.deg2rad(1.0)
     body_rate_init_std_dev = np.deg2rad([0.1, 0.1, 0.1])
-    system_state_init_std_dev = np.hstack((
-        [roll_init_std_dev, pitch_init_std_dev, yaw_init_std_dev],
-        body_rate_init_std_dev
-        ))
+    if which_est == 'kraft_quat_ukf':
+        system_state_init_std_dev = np.hstack((
+            [roll_init_std_dev, pitch_init_std_dev, yaw_init_std_dev],
+            body_rate_init_std_dev
+            ))
+    elif which_est == 'ukf':
+        system_state_init_std_dev = np.hstack((
+            [0.1, 0.1, 0.1, 0.1],
+            body_rate_init_std_dev
+            ))
     # The std. dev. uncertainty of the sensor bias states.
     # [units: radian second**-1]
     gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
@@ -111,14 +127,24 @@ def create_estimator(dt, use_mag, mag_cal):
         )))**2
 
     # Create the Kalman Filter
-    est = KraftQautUKF(
-        x_est_init,
-        Q_init,
-        est_sensors.augmented_transition_function,
-        est_sensors.augmented_process_covariance,
-        est_sensors.measurement_function,
-        est_sensors.noise_cov,
-        )
+    if which_est == 'kraft_quat_ukf':
+        est = KraftQautUKF(
+            x_est_init,
+            Q_init,
+            est_sensors.augmented_transition_function,
+            est_sensors.augmented_process_covariance,
+            est_sensors.measurement_function,
+            est_sensors.noise_cov
+            )
+    elif which_est == 'ukf':
+        est = UnscentedKalmanFilter(
+            x_est_init,
+            Q_init,
+            est_sensors.augmented_transition_function,
+            est_sensors.augmented_process_covariance,
+            est_sensors.measurement_function,
+            est_sensors.noise_cov
+            )
 
     return (est, est_sensors)
 
@@ -206,7 +232,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
     # Create trajectories for storing data
     x_est_traj = np.zeros((n_steps, len(est.x_est)))
     x_est_traj[0] = est.x_est
-    Q_traj = np.zeros((n_steps, len(est.x_est)-1, len(est.x_est)-1))
+    Q_traj = np.zeros((n_steps, est.Q.shape[0], est.Q.shape[1]))
     Q_traj[0] = est.Q
 
     # Run the fitler
@@ -260,12 +286,16 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     plt.legend(framealpha=0.5)
     
     ax2 = plt.subplot(3, 2, 2, sharex=ax)
-    Q_traj_padded = np.concatenate((
-        np.zeros((len(t_traj), len(x_est_traj[0]), 1)),
-        np.concatenate((
-            np.zeros((len(t_traj), 1, len(x_est_traj[0])-1)),
-            Q_traj), axis=1)
-        ), axis=2)
+    if Q_traj.shape[1] != x_est_traj.shape[1]:
+        Q_traj_padded = np.concatenate((
+            np.zeros((len(t_traj), len(x_est_traj[0]), 1)),
+            np.concatenate((
+                np.zeros((len(t_traj), 1, len(x_est_traj[0])-1)),
+                Q_traj), axis=1)
+            ), axis=2)
+    else:
+        Q_traj_padded = Q_traj
+
     for i in [0, 1, 2]:
         if x_traj is not None:
             plt.plot(t_traj, x_traj[:, i+4] * r2d, color=colors[i+1], linestyle='-',
@@ -381,7 +411,7 @@ def main(args):
         raise ValueError
     
     # Create the estimator
-    est, est_sensors = create_estimator(dt, args.use_mag, args.mag_cal)
+    est, est_sensors = create_estimator(dt, args.use_mag, args.mag_cal, args.est)
 
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
@@ -400,8 +430,8 @@ def main(args):
             name = 'static'
         if 'xyz90' in args.pkl_file:
             name = 'xyz90'
-    plt.savefig('est_result_{:s}_{:s}.png'.format(args.meas_source, name))
-    plt.savefig('est_result_{:s}_{:s}.pdf'.format(args.meas_source, name))
+    plt.savefig('est_result_{:s}_{:s}_{:s}.png'.format(args.meas_source, name, args.est))
+    plt.savefig('est_result_{:s}_{:s}_{:s}.pdf'.format(args.meas_source, name, args.est))
     plt.show()
 
 
@@ -418,6 +448,9 @@ if __name__ == '__main__':
                     action='store_true')
     parser.add_argument('--mag_cal', type=str, required=False,
         help='Pickle file containing the magnetometer calibration parameters.')
+    parser.add_argument('--est', type=str, required=False,
+        choices=['kraft_quat_ukf', 'ukf'], default='kraft_quat_ukf',
+        help='Which estimator to use.')
     args = parser.parse_args()
     if args.meas_source == 'pickle' and args.pkl_file is None:
         parser.error('--pkl_file is required if --meas_source is "pickle"')
