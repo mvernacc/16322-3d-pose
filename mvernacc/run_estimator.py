@@ -363,14 +363,21 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     Q_ypr[:,2,2] = Q_traj[:,0,0]
     for i in xrange(3):
         if x_traj is not None:
+            break_angle_wraps_with_none(ypr_true[:,i])
             plt.plot(t_traj, ypr_true[:,i] * r2d, 
                 color=angle_colors[i], label=angle_names[i] + ' true')
+        break_angle_wraps_with_none(ypr_est[:,i])
         plot_single_state_vs_time(ax6, t_traj, ypr_est * r2d, Q_ypr * r2d**2,
             i, color=angle_colors[i], label=angle_names[i] + ' est',
             linestyle='--')
     plt.xlabel('Time [s]')
     plt.ylabel('Attitude [deg]')
     plt.legend(framealpha=0.5)
+
+
+def break_angle_wraps_with_none(angles):
+    d = np.diff(angles)
+    angles[np.where(np.abs(d) > np.deg2rad(170))] = None
 
 
 def main(args):
