@@ -149,10 +149,9 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
     return (est, est_sensors)
 
 
-def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
-    sim_type='static'):
+def run(est, n_steps, dt, args, t_traj=None, y_traj=None):
     # Set up the measurement source
-    if meas_source == 'sim':
+    if args.meas_source == 'sim':
         # Time
         t_traj = np.linspace(0, (n_steps - 1)*dt, n_steps)
 
@@ -184,10 +183,10 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
 
         # Control trajectory
         u_traj = np.zeros((n_steps, 3))
-        if sim_type == 'static':
+        if args.sim_type == 'static':
             # Keep zero control
             pass
-        elif sim_type == 'xyz90':
+        elif args.sim_type == 'xyz90':
             t_x = 5.
             t_y = 20.
             t_z = 35.
@@ -205,7 +204,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
             u_traj[int((t_z + dur)/dt)] = -2*u * np.array([0,0,1])
             u_traj[int((t_z + 2*dur)/dt)] = u * np.array([0,0,1])
 
-        elif sim_type == 'tumble':
+        elif args.sim_type == 'tumble':
             for i in xrange(n_steps):
                 if np.random.rand() < 2e-2:
                     u_traj[i] = 1000 * dt**2 * (np.random.rand(3) - 0.5)
@@ -224,7 +223,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
 
         
 
-    elif meas_source == 'pickle':
+    elif args.meas_source == 'pickle':
         assert t_traj is not None
         assert y_traj is not None
     else:
@@ -239,14 +238,14 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
     # Run the fitler
     for i in xrange(1, n_steps):
         # Get measurements
-        if meas_source == 'sim':
+        if args.meas_source == 'sim':
             # Update sensor state
             sim_sensors.update_sensor_state(x_traj[i-1])
             gyro_bias_traj[i] = gyro_sim.bias + gyro_sim.constant_bias
             y_traj[i] = sim_sensors.add_noise(sim_sensors.measurement_function(x_traj[i-1]))
             # Simulate the true dynamics.
             x_traj[i] = rotation_dynamics(x_traj[i-1], u_traj[i], dt)
-        elif meas_source == 'pickle':
+        elif args.meas_source == 'pickle':
             pass
         else:
             raise ValueError
@@ -268,9 +267,9 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
     print 'Final estimate covariance Q = '
     print est.Q
 
-    if meas_source == 'sim':
+    if args.meas_source == 'sim':
         return (t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj)
-    elif meas_source == 'pickle':
+    elif args.meas_source == 'pickle':
         return (t_traj, x_est_traj, Q_traj, y_traj, None, None)
     else:
         raise ValueError
@@ -429,8 +428,7 @@ def main(args):
 
     # Run the estimator
     t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj = \
-        run(est, args.meas_source, n_steps, dt, t_traj, y_traj,
-            args.use_mag, args.sim_type)
+        run(est, n_steps, dt, args, t_traj, y_traj)
 
     # Plot the results
     plt.figure(figsize=(4*4, 3*4))
