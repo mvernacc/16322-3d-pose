@@ -441,6 +441,8 @@ if __name__ == '__main__':
         help='Which simulation to run. Required if --meas_source is "sim".')
     parser.add_argument('--use_mag', help='Use magnetometer data',
                     action='store_true')
+    parser.add_argument('--mag_cal', type=str, required=False,
+        help='Pickle file containing the magnetometer calibration parameters.')
     args = parser.parse_args()
     if args.meas_source == 'pickle' and args.pkl_file is None:
         parser.error('--pkl_file is required if --meas_source is "pickle"')
