@@ -313,9 +313,12 @@ def plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj, use_ma
     for i in [0, 1, 2]:
         if x_traj is not None:
             plt.plot(t_traj, x_traj[:, i+4] * r2d, color=colors[i+1], linestyle='-',
-                label='w[{:d}] true'.format(i))
+                label='$\omega$[{:d}] true'.format(i))
+        else:
+            plt.plot(t_traj, y_traj[:, i] * r2d, color=colors[i+1], linestyle='-',
+                    label='$\omega$[{:d}] meas'.format(i))
         plot_single_state_vs_time(ax2, t_traj, x_est_traj * r2d, Q_traj_padded * r2d**2, i+4,
-            color=colors[i+1], label='w[{:d}] est'.format(i),
+            color=colors[i+1], label='$\omega$[{:d}] est'.format(i),
             linestyle='--')
     plt.xlabel('Time [s]')
     plt.ylabel('Angular rate [deg / s]')
