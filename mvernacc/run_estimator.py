@@ -95,7 +95,7 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
 
     # Initial state estimate. Set the sensor bias states
     # to an initial estimate of zero.
-    q_init = quat.axangle2quat([1,0,0], np.deg2rad(180))
+    q_init = np.array([1., 0., 0., 0.]) #quat.axangle2quat([1,0,0], np.deg2rad(180))
     body_rate_init = [0., 0., 0.]
     x_est_init = np.concatenate(( q_init, body_rate_init,
         np.zeros(n_sensor_states)))
@@ -103,9 +103,9 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
     # Initial estimate covariance.
     # The std. dev. uncertainty of the initial system state
     # estimate
-    yaw_init_std_dev = np.deg2rad(10.)
-    pitch_init_std_dev = np.deg2rad(1.0)
-    roll_init_std_dev = np.deg2rad(1.0)
+    yaw_init_std_dev = np.deg2rad(30.)
+    pitch_init_std_dev = np.deg2rad(30.)
+    roll_init_std_dev = np.deg2rad(30.)
     body_rate_init_std_dev = np.deg2rad([0.1, 0.1, 0.1])
     if which_est == 'kraft_quat_ukf':
         system_state_init_std_dev = np.hstack((
@@ -114,7 +114,7 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
             ))
     elif which_est == 'ukf':
         system_state_init_std_dev = np.hstack((
-            [0.1, 0.1, 0.1, 0.1],
+            [0.2, 0.2, 0.2, 0.2],
             body_rate_init_std_dev
             ))
     # The std. dev. uncertainty of the sensor bias states.
@@ -173,7 +173,8 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
                 [[4, 5, 6], [0, 1, 2, 3]], n_system_states)
 
         # Initial true state
-        q_init = quat.axangle2quat([1,0,0], np.deg2rad(180))
+        q_init = quat.qmult(quat.axangle2quat([1,0,0], np.deg2rad(180)),
+            quat.axangle2quat([0,0,1], np.deg2rad(14)))
         body_rate_init = [0., 0., 0.]
         x_init = np.concatenate(( q_init, body_rate_init))
 
