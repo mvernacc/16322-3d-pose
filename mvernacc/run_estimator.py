@@ -95,7 +95,7 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
 
     # Initial state estimate. Set the sensor bias states
     # to an initial estimate of zero.
-    q_init = quat.axangle2quat([0,0,1], np.deg2rad(-45))
+    q_init = quat.axangle2quat([1,0,0], np.deg2rad(180))
     body_rate_init = [0., 0., 0.]
     x_est_init = np.concatenate(( q_init, body_rate_init,
         np.zeros(n_sensor_states)))
@@ -158,7 +158,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
 
         # Create the sensors for the simulation (unknown, random bias parameters). 
         gyro_sim = RateGyro(dt=dt)
-        magneto_sim = Magnetometer(b=[10., 10., 10.], D=0.1*np.ones((3,3)))
+        magneto_sim = Magnetometer(b=np.zeros(3), D=np.zeros((3,3)))
         magneto_sim.is_stateful = False
         accel_sim = Accelerometer(a_bias_sensor=[0, 0, 0])
         accel_sim.is_stateful = False
@@ -430,8 +430,11 @@ def main(args):
             name = 'static'
         if 'xyz90' in args.pkl_file:
             name = 'xyz90'
-    plt.savefig('est_result_{:s}_{:s}_{:s}.png'.format(args.meas_source, name, args.est))
-    plt.savefig('est_result_{:s}_{:s}_{:s}.pdf'.format(args.meas_source, name, args.est))
+    mag = ''
+    if args.use_mag:
+        mag = 'mag'
+    plt.savefig('est_result_{:s}_{:s}_{:s}_{:s}.png'.format(args.meas_source, name, args.est, mag))
+    plt.savefig('est_result_{:s}_{:s}_{:s}_{:s}.pdf'.format(args.meas_source, name, args.est, mag))
     plt.show()
 
 
