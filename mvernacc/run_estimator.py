@@ -63,9 +63,11 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
     if which_est == 'kraft_quat_ukf':
         process_std_dev = np.hstack((np.deg2rad([10, 10, 10])*dt, 
             np.deg2rad([10, 10, 10])*dt))
-    elif which_est == 'ukf':
+    elif which_est == 'ukf' or which_est == 'ukf_qnorm':
         process_std_dev = np.hstack((np.ones(4)*0.1*dt, 
             np.deg2rad([10, 10, 10])*dt))
+    else:
+        raise ValueError
     W = np.diag(process_std_dev)**2
 
     # Number of system states.
@@ -75,8 +77,10 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
     # Number of redundant states
     if which_est == 'kraft_quat_ukf':
         n_redundant_states = 1
-    elif which_est == 'ukf':
+    elif which_est == 'ukf' or which_est == 'ukf_qnorm':
         n_redundant_states = 0
+    else:
+        raise ValueError
 
     if use_mag:
         est_sensors = KalmanSensors([gyro_est, accel_est, magneto_est],
@@ -112,11 +116,13 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
             [roll_init_std_dev, pitch_init_std_dev, yaw_init_std_dev],
             body_rate_init_std_dev
             ))
-    elif which_est == 'ukf':
+    elif which_est == 'ukf' or which_est == 'ukf_qnorm':
         system_state_init_std_dev = np.hstack((
             [0.2, 0.2, 0.2, 0.2],
             body_rate_init_std_dev
             ))
+    else:
+        raise ValueError
     # The std. dev. uncertainty of the sensor bias states.
     # [units: radian second**-1]
     gyro_bias_std_dev = np.deg2rad([5., 5., 5.])
@@ -136,7 +142,7 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
             est_sensors.measurement_function,
             est_sensors.noise_cov
             )
-    elif which_est == 'ukf':
+    elif which_est == 'ukf' or which_est == 'ukf_qnorm':
         est = UnscentedKalmanFilter(
             x_est_init,
             Q_init,
@@ -145,6 +151,8 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
             est_sensors.measurement_function,
             est_sensors.noise_cov
             )
+    else:
+        raise ValueError
 
     return (est, est_sensors)
 
@@ -251,11 +259,11 @@ def run(est, n_steps, dt, args, t_traj=None, y_traj=None):
             raise ValueError
         # Update filter estimate.
         est.propagate_dynamics(np.array([0, 0, 0]))
-        if type(est) is UnscentedKalmanFilter:
+        if 'qnorm' in args.est:
             # Normalize the quaternion state
             est.x_est[0:4] /= np.linalg.norm(est.x_est[0:4])
         est.update_measurement(y_traj[i])
-        if type(est) is UnscentedKalmanFilter:
+        if 'qnorm' in args.est:
             # Normalize the quaternion state
             est.x_est[0:4] /= np.linalg.norm(est.x_est[0:4])
         # Record the estimates.
@@ -464,8 +472,11 @@ if __name__ == '__main__':
     parser.add_argument('--mag_cal', type=str, required=False,
         help='Pickle file containing the magnetometer calibration parameters.')
     parser.add_argument('--est', type=str, required=False,
-        choices=['kraft_quat_ukf', 'ukf'], default='kraft_quat_ukf',
-        help='Which estimator to use.')
+        choices=['kraft_quat_ukf', 'ukf', 'ukf_qnorm'], default='kraft_quat_ukf',
+        help="Which estimator to use." \
+        + "  'kraft_quat_ukf' - Edgar Kraft's quaternion-based Unscented Kalman Filter."\
+        + "  'ukf' - Typical Unscented Kalman Filter WITHOUT quaternion normalization, this will likely fail to estimate the attitude state."\
+        + "  'ukf_qnorm' - Typical Unscented Kalman Filter WITH quaternion normalization, this may estimate the attitude state but usually has worse performance than 'kraft_quat_ukf'.")
     args = parser.parse_args()
     if args.meas_source == 'pickle' and args.pkl_file is None:
         parser.error('--pkl_file is required if --meas_source is "pickle"')
