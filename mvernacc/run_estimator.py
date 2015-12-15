@@ -27,10 +27,8 @@ def rotation_dynamics(x, u, dt=0.01):
     q_world2body = x[0:4]
     # Angular rate vector
     w_body = x[4:7]
-
-    w_world = quat_utils.rotate_frame(w_body, q_world2body)
     
-    q_next = quat_utils.quat_propagate(q_world2body, w_world, dt)
+    q_next = quat_utils.quat_propagate(q_world2body, w_body, dt)
     w_next = w_body + u * dt
 
     x_next = np.hstack((q_next, w_next))
@@ -175,7 +173,7 @@ def run(est, meas_source, n_steps, dt, t_traj=None, y_traj=None, use_mag=False,
                 [[4, 5, 6], [0, 1, 2, 3]], n_system_states)
 
         # Initial true state
-        q_init = quat.axangle2quat([0,0,1], np.deg2rad(-45))
+        q_init = quat.axangle2quat([1,0,0], np.deg2rad(180))
         body_rate_init = [0., 0., 0.]
         x_init = np.concatenate(( q_init, body_rate_init))
 
