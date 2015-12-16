@@ -737,16 +737,37 @@ The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90_
 \end{figure*}
 
 \subsection{Experimental Results}
-The experimental static trajectory is shown in figure \ref{fig:est_result_pickle_static}. Note that although the accelerometer has negligible bias walk, it does have a significant constant bias, which my sensor model and state augmentation fails to account for. This causes a $\SI{9.5}{\degree}$ roll error. Also note the large yaw uncertainty, as seen in the simulated static case.\\
+The experimental static trajectory is shown in figure \ref{fig:est_result_pickle_static_kraft_quat_ukf_mag}. Note that the $z$ axis body rate is erroneously high due to an erroneously low $z$ axis gyro bias estimate for the first few seconds. The rate-of-change of $q[2]$ (yaw) as it converges from the initial guess ($yaw = \SI{0}{\degree}$) to its correct value ($yaw = \SI{15}{\degree}$) causes the filter's $z$ axis body rate estimate to be positive. However, the rate gyro (correctly) reads a body rate of $\approx \SI{0}{\degree\per\second}$, so the estimator's $z$ axis gyro bias estimate becomes negative to compensate. After yaw becomes constant, it takes some time for the $z$ axis gyro bias estimate to re-converge to its correct value ($\approx \SI{0}{\degree\per\second}$). I was able to significantly shorten this time by changing the sensor model's rate gyro correlation time from $1/\alpha = \SI{100}{\second}$ to a fictitiously low $1/\alpha = \SI{10}{\second}$.\\
+
+All attitude components attain a final value within $\SI{2}{\degree}$ of their true value (see table \ref{table:att_est_perf}.\\
+
+\begin{table}[!t]
+    % increase table row spacing, adjust to taste
+    \renewcommand{\arraystretch}{1.3}
+    \caption{Attitude estimation performance. Convergence time is first time within \SI{2}{\degree} of final value. The true values are measured with a level (pitch, roll) and with a compass corrected for declination by \cite{wmm} (yaw).}
+    \label{table:att_est_perf}
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        Axis & True value & Estimated value & Convergence time \\
+        \hline
+        yaw & $\SI[separate-uncertainty = true]{14.8(20)}{\degree}$ & $\SI[separate-uncertainty = true]{17.0(15)}{\degree}$ & \SI{1.6}{\second} \\
+        \hline
+        pitch & $\SI[separate-uncertainty = true]{0.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{-1.0(4)}{\degree}$ & \SI{0.08}{\second} \\
+        \hline
+        roll & $\SI[separate-uncertainty = true]{180.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{179.6(4)}{\degree}$ & \SI{0.07}{\second} \\
+        \hline
+    \end{tabular}
+\end{table}
 
 The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90}. Note that although the magnetometer bias uncertainty is low, the magnetometer bias estimate is incorrect, and therefore the yaw estimate is incorrect ($\approx \SI{0}{\degree}$ instead of $\approx \SI{-45}{\degree}$). However, the gyro measurements enable the change in yaw from $t = \SI{18}{\second}$ to $t = \SI{22}{\second}$ to correctly be $\SI{90}{\degree}$. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{12}{\second}$ when $pitch=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity. 
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=7.5in]{figures/est_result_pickle_static.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_pickle_static_kraft_quat_ukf_mag.pdf}
   \DeclareGraphicsExtensions.
-  \caption{Estimator outputs and experimental measurements for the static trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
-  \label{fig:est_result_pickle_static}
+  \caption{Estimator outputs and experimental measurements for the static trajectory using Kraft's quaternion UKF. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_pickle_static_kraft_quat_ukf_mag}
 \end{figure*}
 
 \begin{figure*}[!t]
