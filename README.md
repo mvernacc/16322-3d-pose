@@ -8,7 +8,25 @@ This repo contains a implementation of [Edgar Kraft's quaternion-based UKF](http
 
 Installation
 ------------
-TODO
+
+Clone the repo, and its submodules (you need to include the `--recursive` flag to get the submodules):
+
+```shell
+git clone --recursive git@github.mit.edu:mvernacc/16322-3d-pose.git
+```
+
+Install pip (if you don't already have it):
+
+```shell
+sudo apt-get install python-pip
+```
+
+Install 16322-3d-pose using [pip](https://pip.pypa.io/en/stable/). This will automatically install the dependencies.
+
+```shell
+cd 16322-3d-pose
+pip install -e .
+```
 
 
 Usage
