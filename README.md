@@ -28,6 +28,12 @@ cd 16322-3d-pose
 pip install -e .
 ```
 
+If you wish to use the sensor drivers, you will need to install them too:
+```shell
+cd 16322-3d-pose/sensor_drivers/beaglebone-mpu9x50
+ipython setup.py install develop
+```
+
 
 Usage
 -----
