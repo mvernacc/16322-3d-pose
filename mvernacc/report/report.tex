@@ -744,7 +744,7 @@ All attitude components attain a final value within $\SI{2}{\degree}$ of their t
 \begin{table}[!t]
     % increase table row spacing, adjust to taste
     \renewcommand{\arraystretch}{1.3}
-    \caption{Attitude estimation performance. Convergence time is first time within \SI{2}{\degree} of final value. The true values are measured with a level (pitch, roll) and with a compass corrected for declination by \cite{wmm} (yaw).}
+    \caption{Attitude estimation performance on static trajectory. Convergence time is first time within \SI{2}{\degree} of final value. The true values are measured with a level (pitch, roll) and with a compass corrected for declination by \cite{wmm} (yaw).}
     \label{table:att_est_perf}
     \centering
     \begin{tabular}{|l|c|c|c|}
@@ -755,12 +755,34 @@ All attitude components attain a final value within $\SI{2}{\degree}$ of their t
         \hline
         pitch & $\SI[separate-uncertainty = true]{0.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{-1.0(4)}{\degree}$ & \SI{0.08}{\second} \\
         \hline
-        roll & $\SI[separate-uncertainty = true]{180.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{179.6(4)}{\degree}$ & \SI{0.07}{\second} \\
+        roll & $\SI[separate-uncertainty = true]{180.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{-179.6(4)}{\degree}$ & \SI{0.07}{\second} \\
         \hline
     \end{tabular}
 \end{table}
 
-The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90}. Note that although the magnetometer bias uncertainty is low, the magnetometer bias estimate is incorrect, and therefore the yaw estimate is incorrect ($\approx \SI{0}{\degree}$ instead of $\approx \SI{-45}{\degree}$). However, the gyro measurements enable the change in yaw from $t = \SI{18}{\second}$ to $t = \SI{22}{\second}$ to correctly be $\SI{90}{\degree}$. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{12}{\second}$ when $pitch=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity. 
+The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90_kraft_quat_ukf_mag}. The \SI{90}{\degree} motions about the $x$ (at $t = \SIrange{5}{12}{\second}$), $y$ (at $t = \SIrange{14}{21}{\second}$) and $z$ (at $t = \SIrange{24}{30}{\second}$) are correctly detected. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{17}{\second}$ when $pitch=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity.
+
+After the trajectory is completed, all attitude components attain a final value within $\SI{3}{\degree}$ of their true value (see table \ref{table:att_est_perf_xyz90}.\\
+
+
+\begin{table}[!t]
+    % increase table row spacing, adjust to taste
+    \renewcommand{\arraystretch}{1.3}
+    \caption{Attitude estimation performance after xyz90 trajectory. The true values are measured with a level (pitch, roll) and with a compass corrected for declination by \cite{wmm} (yaw).}
+    \label{table:att_est_perf_xyz90}
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        Axis & True value & Estimated value \\
+        \hline
+        yaw & $\SI[separate-uncertainty = true]{14.8(40)}{\degree}$ & $\SI[separate-uncertainty = true]{11.8(15)}{\degree}$ \\
+        \hline
+        pitch & $\SI[separate-uncertainty = true]{0.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{-0.7(4)}{\degree}$ \\
+        \hline
+        roll & $\SI[separate-uncertainty = true]{180.0(5)}{\degree}$ & $\SI[separate-uncertainty = true]{179.7(4)}{\degree}$\\
+        \hline
+    \end{tabular}
+\end{table}
 
 \begin{figure*}[!t]
   \centering
@@ -772,10 +794,10 @@ The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=7.5in]{figures/est_result_pickle_xyz90.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_pickle_xyz90_kraft_quat_ukf_mag.pdf}
   \DeclareGraphicsExtensions.
-  \caption{Estimator outputs and experimental measurements for the xyz90 trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
-  \label{fig:est_result_pickle_xyz90}
+  \caption{Estimator outputs and experimental measurements for the xyz90 trajectory using Kraft's quaternion UKF. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_pickle_xyz90_kraft_quat_ukf_mag}
 \end{figure*}
 
 
