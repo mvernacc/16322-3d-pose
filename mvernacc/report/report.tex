@@ -802,7 +802,9 @@ After the trajectory is completed, all attitude components attain a final value 
 
 
 \section{Conclusion}
-I have successfully implemented the quaternion based UKF described in \cite{1257247}. The estimator performs well (attitude error $< \SI{3}{\degree}$) on simulated data. However, the estimator has poor yaw performance on experimental data, because my magnetometer model is insufficient to properly estimate the bias of that sensor. Future work on this project should include an improved magnetometer model, perhaps the model described in \cite{Crassidis2005}.
+I have successfully implemented Kraft's quaternion based UKF described in \cite{1257247}. The estimator performs well (attitude error $< \SI{3}{\degree}$) on simulated and experimental data. To represent attitude uncertainty, Kraft's UKF uses a 3-D exponential mapped quaternion covariance instead of directly taking the 4-D covariance of the quaternion state. This representation is theoretically justified because the quaternions which represent valid rotations lie on a 3-D manifold within the 4-D quaternion space $\mathbb{H}$. Practically, I have demonstrated that Kraft's UKF has $\approx 10 \times$ faster convergence time that a UKF which uses 4-D quaternion covariance.\\
+
+I have also demonstrated the characterization of a MEMS IMU and magnetometer. I used Allan variance to assess the white noise and bias walk parameters of the sensors. I employed a nonlinear least squares optimization algorithm to estimate the magnetometer bias and scale factor error. \\
 
 
 % conference papers do not normally have an appendix
