@@ -582,6 +582,8 @@ The calibration process can be visualized as mapping a 3D ellipsoid to a sphere.
 
 Whichever algorithm is used, it must be provided with measurements from a set of attitudes which have good coverage of $\mathrm{SO(3)}$ \cite{hardsoftiron}. In the ellipsoid-fitting problem, there is insufficient information if we have noisy points from only a small patch of the ellipse. Analogously, the magnetometer calibration problem is difficult with measurements from a small range of attitudes. For a practical example of how calibration can fail, note that the magnitude error minimization is trivially solved by setting $D = -I$ (map all points to the origin) and $\vec{b}_{mag}$ to any vector with magnitude $|\vec{h}_{Earth}|$. With insufficiently diverse measurements, I found that both the least squares and UKF-based algorithms fall into this trap.\\
 
+I choose to perform \emph{a priori} calibration, and use \texttt{scipy.optimize.leastsq} to solve the nonlinear least squares problem.\\
+
 
 \begin{figure}[!t]
   \centering
