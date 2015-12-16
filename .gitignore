@@ -65,3 +65,6 @@ target/
 # Ignore the plots saved by run_estimator
 mvernacc/est_result*.pdf
 mvernacc/est_result*.png
+
+# Ignore the report pdf (I only want to track the LaTex)
+mvernacc/report/report.pdf
