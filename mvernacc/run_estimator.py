@@ -53,7 +53,7 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
 
     gyro_est = RateGyro(rate_noise_std_dev=np.deg2rad(0.02),
         constant_bias=[0,0,0],
-        correlation_time=100,
+        correlation_time=10,
         bias_walk_process_std_dev=np.deg2rad(2e-3),
         dt=dt)
     accel_est = Accelerometer(a_bias_sensor=[0, 0, 0])
@@ -107,9 +107,9 @@ def create_estimator(dt, use_mag, mag_cal, which_est):
     # Initial estimate covariance.
     # The std. dev. uncertainty of the initial system state
     # estimate
-    yaw_init_std_dev = np.deg2rad(30.)
-    pitch_init_std_dev = np.deg2rad(30.)
-    roll_init_std_dev = np.deg2rad(30.)
+    yaw_init_std_dev = np.deg2rad(45.)
+    pitch_init_std_dev = np.deg2rad(45.)
+    roll_init_std_dev = np.deg2rad(45.)
     body_rate_init_std_dev = np.deg2rad([0.1, 0.1, 0.1])
     if which_est == 'kraft_quat_ukf':
         system_state_init_std_dev = np.hstack((
