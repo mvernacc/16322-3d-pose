@@ -172,7 +172,7 @@ def run(est, n_steps, dt, args, t_traj=None, y_traj=None):
         # Number of system states.
         n_system_states = 7
 
-        if use_mag:
+        if args.use_mag:
             sim_sensors = KalmanSensors([gyro_sim, accel_sim, magneto_sim],
                 [[4, 5, 6], [0, 1, 2, 3], [0, 1, 2, 3]], n_system_states)
         else:
@@ -445,6 +445,7 @@ def main(args):
     plt.figure(figsize=(4*4, 3*4))
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
         args.use_mag,est_sensors)
+
     name = ''
     if args.sim_type is not None:
         name = args.sim_type
@@ -453,6 +454,14 @@ def main(args):
             name = 'static'
         if 'xyz90' in args.pkl_file:
             name = 'xyz90'
+
+    plt.suptitle(
+        'Measurement source: ' + ('experimental' if args.meas_source == 'pickle' else 'simulation')\
+        + '  |  Trajectory: {:s}'.format(name)\
+        + '  |  Estimator: {:s}'.format(args.est)\
+        + '  |  Magnetometer: ' + ('included' if args.use_mag else 'excluded'),
+        verticalalignment='top')
+    
     mag = ''
     if args.use_mag:
         mag = 'mag'
