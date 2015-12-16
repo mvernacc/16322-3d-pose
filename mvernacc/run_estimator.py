@@ -442,7 +442,7 @@ def main(args):
         run(est, n_steps, dt, args, t_traj, y_traj)
 
     # Plot the results
-    plt.figure(figsize=(4*4, 3*4))
+    plt.figure(figsize=(12, 14))
     plot_traj(t_traj, x_est_traj, Q_traj, y_traj, x_traj, gyro_bias_traj,
         args.use_mag,est_sensors)
 
