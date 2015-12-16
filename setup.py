@@ -45,7 +45,7 @@ setup(
     keywords='kalman UKF quaternion estimation',
 
 
-    install_requires=['numpy', 'scipy', 'matplotlib'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'transforms3d'],
 
     packages=find_packages(),
 
