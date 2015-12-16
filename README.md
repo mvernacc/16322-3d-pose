@@ -10,10 +10,10 @@ Usage
 -----
 
 ### Estimator
-The estimator program is in the `mvernacc` directory:
+The estimator program is in the top-level directory:
 
 ```shell
-cd 16322-3d-pose/mvernacc
+cd 16322-3d-pose
 ```
 
 To run the estimator on saved experimental sensor data:
@@ -43,12 +43,12 @@ cd 16322-3d-pose/estimators/sensor_models
 To run Allan variance analysis on the rate gyroscope:
 
 ```shell
-ipython allan.py -- ../../mvernacc/data/exemplars/data_for_allan.p gyro_data
+ipython allan.py -- ../../data/exemplars/data_for_allan.p gyro_data
 ```
 
 To run magnetometer calibration:
 ```shell
-ipython mag_cal.py -- --meas_source pickle --pkl_file ../../mvernacc/data/exemplars/data_for_mag_cal.p --solver leastsq
+ipython mag_cal.py -- --meas_source pickle --pkl_file ../../data/exemplars/data_for_mag_cal.p --solver leastsq
 ```
 
 
