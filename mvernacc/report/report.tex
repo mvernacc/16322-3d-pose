@@ -393,7 +393,7 @@ where:
 
 Compared to the magnitude of the acceleration due to gravity, the bias of MEMS accelerometers is typically quite small \cite{mpu9150, UCAM-CL-TR-696}. Therefore I do not include bias terms in my accelerometer model. Further, I assume that the sensor only undergoes rotation, not translation. Any accidental accelerations (e.g. shaking of the sensor during rotation, centripetal acceleration) are modeled as noise. I mounted the sensor near the body's center of mass to minimize centripetal acceleration.\\
 
-The measurement noise is draw from
+The measurement noise is drawn from
 \begin{equation}
   \vec{\nu}_{accel} \sim \mathcal{N}(0,
   \begin{bmatrix}
@@ -414,47 +414,49 @@ where $\Delta t$ is the sampling time interval \cite{1642588}.
 \subsection{Rate Gyroscope}
 I model the MEMS rate gyroscope measurement function as \cite{1642588}:
 \begin{equation}
-  \vec{\omega}_{meas}^{sensor}(t) = \vec{\omega}^{sensor}(t) + \vec{d} + \vec{b}(t) + \vec{\nu}_{gyro}(t)
+  \vec{\omega}_{meas}^{sensor}(t) = \vec{\omega}^{sensor}(t) + \vec{d} + \vec{b}_{gyro}(t) + \vec{\nu}_{gyro}(t)
 \end{equation}
 where:
 \begin{itemize}
   \item $\vec{\omega}_{meas}^{sensor}(t)$ is the angular rate measured in the sensor frame at time $t$.
   \item $\vec{\omega}^{sensor}(t)$ is the true angular rate of the sensor with respect to an inertial frame, at time $t$.
   \item $\vec{d}$ is a constant bias.
-  \item $\vec{b}(t)$ is a time-evolving bias.
+  \item $\vec{b}_{gyro}(t)$ is a time-evolving bias.
   \item $\nu_{gyro}(t)$ is the gyro measurement noise.
 \end{itemize}
 
 I model the evolution of the bias as a stationary Gauss-Markov process \cite{1642588, park}:
 \begin{equation}
-  \dv{\vec{b}}{t} = - \alpha \vec{b}(t) + \vec{\eta_{u,c}}(t)
+  \dv{\vec{b}_{gyro}}{t} = - \alpha \vec{b}_{gyro}(t) + \vec{\eta_{u,c}}(t)
 \end{equation}
 where $\alpha$ is the inverse of the correlation time, and $\vec{\eta_{u,c}}(t)$ is the zero mean Gaussian bias walk noise. The discrete-time version of this equation is \cite{1642588}:
 \begin{equation}
-  \vec{b}(t + \Delta t) = (1 - \alpha \Delta t) \vec{b}(t) + \vec{\eta_{u,d}}(t)
+  \vec{b}_{gyro}(t + \Delta t) = (1 - \alpha \Delta t) \vec{b}_{gyro}(t) + \vec{\eta_{u,d}}(t)
 \end{equation}
 
 The sensor's correlation time and bias walk noise standard deviation are estimated in section \ref{sensor_char}.
 
 
 \subsection{Magnetometer}
-I model the magnetometer measurement function as:
+I model the magnetometer measurement function as \cite{Crassidis2005}:
 \begin{multline}
-  \vec{h}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{h}_{Earth}^{NED} + \vec{h}_{bias}^{NED}, q_{NED2sensor}(t)) \\
-  + \vec{h}_{bias}^{sensor} + \vec{\nu}_{mag}(t)
+  \vec{h}_{meas}^{sensor}(t) = (I + D)^{-1}(\textproc{RotateFrame}(\vec{h}_{Earth}^{NED}, q_{NED2sensor}(t)) \\
+  + \vec{b}_{mag}) + \vec{\nu}_{mag}(t)
 \end{multline}
 where:
 \begin{itemize}
   \item $\vec{h}_{meas}^{sensor}(t)$ is the magnetic field measured in the sensor frame at time $t$.
   \item $\vec{h}_{Earth}^{NED}$ is the Earth's magnetic field in the NED frame. This value varies with time and geographic location. In Cambridge, MA in 2015, it is $\vec{h}_{Earth}^{NED} = [\SI{19.5}{\micro\tesla}, \SI{-5.1}{\micro\tesla}, \SI{48.2}{\micro\tesla}]$ \cite{wmm}.
-  \item $\vec{h}_{bias}^{NED},$ is a constant bias fixed to the NED frame.
-  \item $\vec{h}_{bias}^{sensor},$ is a constant bias which rotates with the sensor.
+  \item $\vec{b}_{mag}$ is a constant bias which rotates with the sensor.
+  \item $D$ is a constant, symmetric $3\times3$ matrix. Its diagonal entries correspond to scale factor errors, and its off-diagonal entries to non-orthogonality errors.
   \item $\vec{\nu}_{mag}(t)$ is the magnetometer measurement noise.
 \end{itemize}
 
+Although the bias and scale factor terms are assumed to be constant in time, they depend on the environment around the magnetometer. Soft iron distortions (nearby ferromagnetic, low magnetic coercivity materials), distort the Earth's magnetic field and change the value of $D$. Hard iron distortions (nearby permanent magnets or electric currents) add to the Earth's magnetic field and change the value of $\vec{b}_{mag}$ \cite{hardsoftiron}. It is important to locate the magnetometer away from time-varying magnetic sources (e.g. motors). It is best to perform the magnetometer calibration steps described in section \ref{sect:mag_cal} after the magnetometer has been installed. 
 
 \section{Sensor Characterization}
 \label{sensor_char}
+\subsection{Allan Variance}
 I analyzed the noise properties of my sensors using the Allan variance technique \cite{UCAM-CL-TR-696}. The Allan variance of a signal is computed  according to algorithm \ref{avar}. The Allan variance is computed for a range of averaging times $\tau$, typically $10$ times the measurement interval to $0.1$ times the duration of the signal. The Allan deviation ($\sqrt{\textproc{Avar}(\tau)}$) is then plotted against $\tau$ on a log-log scale.\\
 
 \begin{algorithm}
@@ -569,6 +571,25 @@ The results of the bias walk analysis are presented in table \ref{table:bias_wal
     \end{tabular}
 \end{table}
 
+\subsection{Magnetometer calibration}
+\label{sect:mag_cal}
+Calibrating the magnetometer entails estimation of the parameters $\vec{b}_{mag}$ and $D$.  Both approaches require knowledge of the magnitude Earth's local magnetic field $|\vec{h}_{Earth}|$, and do not require knowledge of attitude. Because rotation preserves magnitude, all measurements of the Earth's field should have magnitude $|\vec{h}_{Earth}|$ if the proper calibration factors are applied. The magnitude errors between each of the calibrated measurements and $|\vec{h}_{Earth}|$ can be used as a cost to find the optimal $\vec{b}_{mag}$ and $D$ \cite{Crassidis2005}.\\
+
+The calibration parameters can either be estimated from a batch of data prior to running the attitude estimator, or they can be estimated in real time as new magnetometer measurements arrive. One \emph{a priori} algorithm uses non-linear least squares to minimize the sum of the squares of the magnitude errors. A real-time algorithm uses a modification of the UKF measurement-update equations \cite{Crassidis2005}.\\
+
+The calibration process can be visualized as mapping a 3D ellipsoid to a sphere. If we plot the set of uncalibrated measurements as points in 3-space, they lie roughly on the surface of an ellipsoid. Calibration finds the translation ($\vec{b}_{mag}$) and rotation and scaling ($D$) which transform that ellipsoid to a sphere of radius $|\vec{h}_{Earth}|$ centered at the origin (see figure \ref{fig:mag_cal}).\\
+
+Whichever algorithm is used, it must be provided with measurements from a set of attitudes which have good coverage of $\mathrm{SO(3)}$ \cite{hardsoftiron}. In the ellipsoid-fitting problem, there is insufficient information if we have noisy points from only a small patch of the ellipse. Analogously, the magnetometer calibration problem is difficult with measurements from a small range of attitudes. For a practical example of how calibration can fail, note that the magnitude error minimization is trivially solved by setting $D = -I$ (map all points to the origin) and $\vec{b}_{mag}$ to any vector with magnitude $|\vec{h}_{Earth}|$. With insufficiently diverse measurements, I found that both the least squares and UKF-based algorithms fall into this trap.\\
+
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=2.5in]{figures/mag_cal.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Visualization of the magnetometer calibration process in 3D magnetic measurement space.}
+  \label{fig:mag_cal}
+\end{figure}
+
 
 
 \section{Estimator Design}
@@ -660,7 +681,8 @@ The modified quaternion UKF \cite{1257247} represents attitude uncertainty with 
 \end{algorithm}
 
 \subsection{Sensor Bias Estimation}
-I augment the system state $[q_{NED2sensor}, \vec{\omega}^{sensor}]$ with the gyroscope and magnetometer bias parameters $[\vec{b}, \vec{h}^{sensor}_{bias}]$ and run the UKF on the augmented state. This allows the biases to be estimated on-the-fly without the need for pre-calibration. It also accounts for the time-varying nature of the gyroscope bias. However, this approach requires the system to be in motion. The system's absolute rotation about the gravity vector is only observable though magnetometer measurements. If the system does not move, only one ($\pm$ noise) magnetometer measurement is observed. From this single measurement, it is impossible to determine both the magnetometer bias parameters and the rotation about $\vec{g}$. Once measurements from several different orientations have been collected, the estimator has sufficient information to determine both the rotation about $\vec{g}$ and the magnetometer bias.
+I augment the system state $[q_{NED2sensor}, \vec{\omega}^{sensor}]$ with the gyroscope bias parameters $\vec{b}_{gyro}$ and run the UKF on the augmented state. This accounts for the time-varying nature of the gyroscope bias.\\
+I also attempted to estimate the magnetometer bias in-real time as described in \cite{Crassidis2005}. However, this approach requires the system to move through many orientations to build up information about the magnetometer bias. Many trajectories which I may be interested in estimating do not have a sufficient variety of orientations. Instead, I chose to pre-calibrate the magnetometer (see section \ref{sect:mag_cal}).
 
 \section{Results}
 I ran my estimator on data collected by my sensors in two experimental trajectories:
