@@ -380,7 +380,7 @@ The sensor frame is a non-inertial, Cartesian, right-handed coordinate system. T
 \subsection{Accelerometer}
 I model the MEMS accelerometer measurement function as
 \begin{multline}
-  \vec{a}_{meas}^{sensor}(t) = \textproc{RotateFrame}(\vec{g}_{Earth}^{NED}, q_{NED2sensor}(t)) \\
+  \vec{a}_{meas}^{sensor}(t) = \textproc{RotateFrame}(-\vec{g}_{Earth}^{NED}, q_{NED2sensor}(t)) \\
   + \vec{\nu}_{accel}(t)
 \end{multline}
 where:
