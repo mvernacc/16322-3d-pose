@@ -596,6 +596,7 @@ Whichever algorithm is used, it must be provided with measurements from a set of
 Because my system has nonlinear measurements and approximately Gaussian measurement noise, I use an Unscented Kalman Filter (UKF) as my estimator.
 
 \subsection{Quaternion State in the UKF}
+\label{sect:quat_ukf_problems}
 The use of quaternions to represent attitude state requires some modification to the standard UKF algorithm. First, the UKF assumes
 that the state space is a vector space, i.e. that all combinations of settings of the state variables are valid states. While the quaternions $\mathbb{H}$ are a 4-D vector space, only unit quaternions represent valid rotations in $\mathrm{SO(3)}$. Therefore, the attitude state space is the 3-D surface of the unit sphere in $\mathbb{H}$, i.e. it is a manifold, not a vector space.\\
 
@@ -627,8 +628,8 @@ The logarithm of a unit quaternion has real part 0, and complex parts equal to t
 
 Another issue is that the UKF must average state vectors. However, the unit quaternions are a redundant representation of $\mathrm{SO(3)}$, and a quaternion and its negative represent the same rotation. Before averaging quaternions, we must check their vector dot product, and negate one of the quaternions if it is negative.\\
 
-\subsection{Modified quaternion UKF algorithm}
-The modified quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions $d\mathcal{Q}^{(i)}$. Its propagation function is presented in algorithm \ref{alg:propdyn}. If there are $n$ non-attitude states, then the covariance $Q$ has dimension $(n+3) \times (n+3)$, the state estimate $\vec{x}^{est}$ has dimension $n+4$, and the sigma points $\vec{\mathcal{X}}^{(i)}$ have dimension $n+3$. States $0, 1, 2, 3$ are the attitude quaternion, other states are vector components or scalars. The diagonal entries $Q[0,0], Q[1,1], Q[2,2]$ represent the attitude estimate variance about the body-frame $x,y,z$ axes, with units of \si{\radian\squared}. $W$ is the process noise covariance, and $R$ is the measurement noise covariance.\\
+\subsection{Kraft's quaternion UKF algorithm}
+The Kraft's quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions $d\mathcal{Q}^{(i)}$. Its propagation function is presented in algorithm \ref{alg:propdyn}. If there are $n$ non-attitude states, then the covariance $Q$ has dimension $(n+3) \times (n+3)$, the state estimate $\vec{x}^{est}$ has dimension $n+4$, and the sigma points $\vec{\mathcal{X}}^{(i)}$ have dimension $n+3$. States $0, 1, 2, 3$ are the attitude quaternion, other states are vector components or scalars. The diagonal entries $Q[0,0], Q[1,1], Q[2,2]$ represent the attitude estimate variance about the body-frame $x,y,z$ axes, with units of \si{\radian\squared}. $W$ is the process noise covariance, and $R$ is the measurement noise covariance.\\
 
 \begin{algorithm}
   \caption{Quaternion UKF Dynamics Propagation.}
@@ -691,27 +692,48 @@ I ran my estimator on data collected by my sensors in two experimental trajector
     \item xyz90 - Sequential +\SI{90}{\degree} and back rotations about each axis.
 \end{enumerate}
 I was unable to obtain a ground-truth measurement system, so the true state during these experiments is only roughly known. To compensate, I have also run my estimator on simulated measurements of similar trajectories. The true state trajectory is known for the simulated cases.\\
-The results plots contain Euler angle traces on the bottom-right axes. These are included to display the orientation in a human-readable format, but are not used by the estimator. The estimator represents orientation with a quaternion, the components of which are shown on the top-left axes.
+
+All cases start and end with the sensor level and pointing its $x$ axis to magnetic north. Because of the sensors axis designations and the local magnetic declination, this orientation is $yaw = \SI{15}{\degree}, pitch = \SI{0}{\degree}, roll = \SI{180}{\degree}$ relative to the NED frame. The estimator's initial attitude guess is that the sensor frame is aligned with the NED frame ($q_{init} = [1, 0, 0, 0]$).\\
+
+The results plots contain Euler angle traces on the bottom-right axes. These are included to display the orientation in a human-readable format, but are not used by the estimator. The estimator represents orientation with a quaternion, the components of which are shown on the top-left axes.\\
 
 \subsection{Simulation Results}
-The simulated static trajectory is shown in figure \ref{fig:est_result_sim_static}. The sensor's true orientation relative to the NED frame is $yaw = \SI{-45}{\degree}, pitch = \SI{0}{\degree}, roll = \SI{0}{\degree}$. The estimator is given the true orientation as its initial estimate. Note that the estimates of pitch and roll (which are observable though the accelerometer) have very low variance, but the yaw and magnetometer bias have high covariance. Without motion, the magnetometer bias cannot be estimated, and yaw is unobservable. \\
+The simulated static trajectory is shown in figure \ref{fig:est_result_sim_static_kraft_quat_ukf_mag}. The estimator converges to the correct attitude estimate in approximately \SI{3}{\second} and the body rate converges in \SI{30}{\second} (to a slightly wrong value).\\
 
-The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90}. The initial conditions are the same as for the static case. Note that the yaw uncertainty decreases around $t=\SI{10}{\second}$ and $t = \SI{25}{\second}$, when the system experiences large pitch and roll displacements. In these states, the sensor yaw axis is not aligned with gravity, so the accelerometer can provide yaw information, reducing the estimate's yaw variance. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{25}{\second}$ when $pitch=\SI{90}{\degree}$. The quaternion representation of attitude does not have a singularity. 
+To illustrate the importance of the concerns raised in section \ref{sect:quat_ukf_problems}, I also ran a standard UKF on the same data. As shown in figure \ref{fig:est_result_sim_static_ukf_mag}, the estimator fails to converge, and the quaternion has non-unit magnitude. Normalizing the quaternion estimate after each step (figure \ref{fig:est_result_sim_static_ukf_qnorm_mag}) allows the filter to converge, but the convergence time is significantly longer than with Kraft's filter.\\
+
+The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90_kraft_quat_ukf_mag}. The initial conditions are the same as for the static case. Note that the yaw uncertainty decreases around $t=\SI{10}{\second}$ and $t = \SI{25}{\second}$, when the system experiences large pitch and roll displacements. In these states, the sensor yaw axis is not aligned with gravity, so the accelerometer can provide yaw information, reducing the estimate's yaw variance. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{25}{\second}$ when $pitch=\SI{90}{\degree}$. The quaternion representation of attitude does not have a singularity. 
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=8in]{figures/est_result_sim_static.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_sim_static_kraft_quat_ukf_mag.pdf}
   \DeclareGraphicsExtensions.
-  \caption{Estimator outputs, simulated measurements, and true state for the static trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
-  \label{fig:est_result_sim_static}
+  \caption{Estimator outputs, simulated measurements, and true state for the static trajectory using Kraft's quaternion UKF. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_sim_static_kraft_quat_ukf_mag}
 \end{figure*}
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=8in]{figures/est_result_sim_xyz90.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_sim_static_ukf_mag.pdf}
   \DeclareGraphicsExtensions.
-  \caption{Estimator outputs, simulated measurements, and true state for the xyz90 trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
-  \label{fig:est_result_sim_xyz90}
+  \caption{Estimator outputs, simulated measurements, and true state for the static trajectory using a standard UKF \emph{without} quaternion normalization. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_sim_static_ukf_mag}
+\end{figure*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=7.5in]{figures/est_result_sim_static_ukf_qnorm_mag.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Estimator outputs, simulated measurements, and true state for the static trajectory using a standard UKF with quaternion normalization. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_sim_static_ukf_qnorm_mag}
+\end{figure*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=7.5in]{figures/est_result_sim_xyz90_kraft_quat_ukf_mag.pdf}
+  \DeclareGraphicsExtensions.
+  \caption{Estimator outputs, simulated measurements, and true state for the xyz90 trajectory using Kraft's quaternion UKF. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
+  \label{fig:est_result_sim_xyz90_kraft_quat_ukf_mag}
 \end{figure*}
 
 \subsection{Experimental Results}
@@ -721,7 +743,7 @@ The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=8in]{figures/est_result_pickle_static.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_pickle_static.pdf}
   \DeclareGraphicsExtensions.
   \caption{Estimator outputs and experimental measurements for the static trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
   \label{fig:est_result_pickle_static}
@@ -729,7 +751,7 @@ The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=8in]{figures/est_result_pickle_xyz90.pdf}
+  \includegraphics[width=7.5in]{figures/est_result_pickle_xyz90.pdf}
   \DeclareGraphicsExtensions.
   \caption{Estimator outputs and experimental measurements for the xyz90 trajectory. Estimated states are shown as dashed lines. The 1-$\sigma$ estimate uncertainty is shown as a shaded region around the dashed lines.}
   \label{fig:est_result_pickle_xyz90}
