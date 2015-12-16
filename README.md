@@ -1,7 +1,9 @@
 16322-3d-pose
 =============
 
-16.322 3D Pose Estimation Project
+16.322 3D Pose Estimation Project - A 3D attitude estimator based on the Unscented Kalman Filter (UKF) using a MEMS IMU and magnetometer.
+
+This repo contains a implementation of [Edgar Kraft's quaternion-based UKF](http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf) and a program for running the UKF on simulated data or saved experimental data. It also contains sensor drivers for the MPU-9150 on the BeagleBone Black, quaternion utilities, and tools for sensor characterization.
 
 
 Usage
