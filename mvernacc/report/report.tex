@@ -356,7 +356,8 @@ Several estimators are used in navigation, generally depending on which sensors 
 
 \section{Hardware}
 For my sensors, I use an MPU-9150 from InvenSense \cite{mpu9150}. SparkFun Electronics sells the sensor conveniently mounted on a breakout board (part number SEN-11486). The MPU-9150 contains a 3-axis MEMS rate gyro, 3-axis MEMS accelerometer, and a 3-axis Hall effect magnetometer.\\
-For computation I use a BeagleBone Black single board computer from Texas Instruments.\\
+
+For computation I use a BeagleBone Black single board computer from Texas Instruments. The BeagleBone communicates with the sensor board via and Inter-Integrated Circuit (I\textsuperscript{2}C) bus.\\
 
 \section{Coordinate Systems}
 I reference the following coordinate systems in my project. The notation for vectors is $\vec{r}^{A}$ indicates that a vector is written in frame A. The notation for quaternions is $q_{A2B}$ indicates the rotation which transforms vectors from frame A to B.
@@ -403,7 +404,7 @@ The measurement noise is drawn from
     \end{bmatrix}
   )
 \end{equation}
-The measurement noise standard deviation is typically specified as a continuous-time Fourier spectral density $\sigma_{accel,c,*}$, with units of \si{\meter\per\second\squared\sqrt\second}. This can be converted to discrete time via:
+The measurement noise standard deviation is typically specified as a continuous-time Fourier spectral density $\sigma_{accel,c,*}$, with units of \si{\meter\second^{-2}\sqrt\second}. This can be converted to discrete time via:
 \begin{equation}
   \label{eqn:cont_to_desc_noise}
   \sigma_{accel,d,*} = \sigma_{accel,c,*} \frac{1}{\sqrt{\Delta t}}
@@ -537,9 +538,9 @@ The results of the bias walk analysis are presented in table \ref{table:bias_wal
     MPU-9150 Gyro $y$ axis & \SI{0.0162}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.106}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
     MPU-9150 Gyro $z$ axis & \SI{0.0180}{\degree\per\sqrt\second} & \SI{0.005}{\degree\per\sqrt\second} & \SI{0.141}{\degree\per\second} at \SI{46}{\hertz} & \SI{0.06}{\degree\per\second} at \SI{92}{\hertz} \\
     \hline
-    MPU-9150 Accel $x$ axis & \SI{4.56e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
-    MPU-9150 Accel $y$ axis & \SI{4.63e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
-    MPU-9150 Accel $z$ axis & \SI{6.66e-3}{\meter\per\second\squared\sqrt\second} & \SI{3.9e-3}{\meter\per\second\squared\sqrt\second} & \SI{0.0453}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $x$ axis & \SI{4.56e-3}{\meter\second^{-2}\sqrt\second} & \SI{3.9e-3}{\meter\second^{-2}\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $y$ axis & \SI{4.63e-3}{\meter\second^{-2}\sqrt\second} & \SI{3.9e-3}{\meter\second^{-2}\sqrt\second} & \SI{0.0315}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
+    MPU-9150 Accel $z$ axis & \SI{6.66e-3}{\meter\second^{-2}\sqrt\second} & \SI{3.9e-3}{\meter\second^{-2}\sqrt\second} & \SI{0.0453}{\meter\per\second\squared} at \SI{46}{\hertz} & \SI{0.039}{\meter\per\second\squared} at \SI{92}{\hertz} \\
     \hline
     MPU-9150 Mag $x$ axis & \SI{0.136}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.913}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
     MPU-9150 Mag $y$ axis & \SI{0.143}{\micro\tesla\sqrt\second} & Unspec'd & \SI{0.923}{\micro\tesla} at \SI{46}{\hertz} & \SI{0.1}{\micro\tesla} at \SI{100}{\hertz} \cite{1643403}\\
