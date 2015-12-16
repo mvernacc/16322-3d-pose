@@ -6,6 +6,11 @@
 This repo contains a implementation of [Edgar Kraft's quaternion-based UKF](http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf) and a program for running the UKF on simulated data or saved experimental data. It also contains sensor drivers for the MPU-9150 on the BeagleBone Black, quaternion utilities, and tools for sensor characterization.
 
 
+Installation
+------------
+TODO
+
+
 Usage
 -----
 
@@ -54,18 +59,18 @@ ipython mag_cal.py -- --meas_source pickle --pkl_file ../../data/exemplars/data_
 
 Dependencies
 ------------
-python 2.7
-numpy
-scipy
-matplotlib
-beaglebone-mpu9x50
-beaglebone-px4flow
-estimators
-transforms3d
-TRICAL
-    cmake, svn for TRICAL
-    in order to build TRICAL I needed to modify the compiler flags in
-    `set(CMAKE_C_FLAGS, "...")` in `CMakeLists.txt`:
-     * add `-std=C99`
-     * remove `-Weverything`
-     * remove `-Wno-documentation`
+ * python 2.7
+
+ * numpy
+
+ * scipy
+
+ * matplotlib
+
+ * [beaglebone-mpu9x50](https://github.com/mvernacc/beaglebone-mpu9x50) for sensor drivers.
+
+ * [beaglebone-px4flow](https://github.mit.edu/mvernacc/beaglebone-px4flow-i2c) for sensor drivers.
+
+ * [estimators](https://github.mit.edu/mvernacc/estimators) for Kalman Filter ans sensor models.
+
+ * [transforms3d](https://github.com/matthew-brett/transforms3d) for quaternion math.
