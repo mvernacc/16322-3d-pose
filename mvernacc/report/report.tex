@@ -706,7 +706,7 @@ The simulated static trajectory is shown in figure \ref{fig:est_result_sim_stati
 
 To illustrate the importance of the concerns raised in section \ref{sect:quat_ukf_problems}, I also ran a standard UKF on the same data. As shown in figure \ref{fig:est_result_sim_static_ukf_mag}, the estimator fails to converge, and the quaternion has non-unit magnitude. Normalizing the quaternion estimate after each step (figure \ref{fig:est_result_sim_static_ukf_qnorm_mag}) allows the filter to converge, but the convergence time is significantly longer than with Kraft's filter.\\
 
-The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90_kraft_quat_ukf_mag}. The initial conditions are the same as for the static case. Note that the yaw uncertainty decreases around $t=\SI{10}{\second}$ and $t = \SI{25}{\second}$, when the system experiences large pitch and roll displacements. In these states, the sensor yaw axis is not aligned with gravity, so the accelerometer can provide yaw information, reducing the estimate's yaw variance. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{25}{\second}$ when $pitch=\SI{90}{\degree}$. The quaternion representation of attitude does not have a singularity. 
+The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90_kraft_quat_ukf_mag}. The initial conditions are the same as for the static case. Note that the yaw uncertainty decreases around $t=\SI{10}{\second}$ and $t = \SI{25}{\second}$, when the system experiences large pitch and roll displacements. In these states, the sensor yaw axis is not aligned with gravity, so the accelerometer can provide yaw information, reducing the estimate's yaw variance. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{25}{\second}$ when pitch $=\SI{90}{\degree}$. The quaternion representation of attitude does not have a singularity. 
 
 \begin{figure*}[!t]
   \centering
@@ -743,7 +743,7 @@ The simulated xyz90 trajectory is shown in figure \ref{fig:est_result_sim_xyz90_
 \subsection{Experimental Results}
 The experimental static trajectory is shown in figure \ref{fig:est_result_pickle_static_kraft_quat_ukf_mag}. Note that the $z$ axis body rate is erroneously high due to an erroneously low $z$ axis gyro bias estimate for the first few seconds. The rate-of-change of $q[2]$ (yaw) as it converges from the initial guess ($yaw = \SI{0}{\degree}$) to its correct value ($yaw = \SI{15}{\degree}$) causes the filter's $z$ axis body rate estimate to be positive. However, the rate gyro (correctly) reads a body rate of $\approx \SI{0}{\degree\per\second}$, so the estimator's $z$ axis gyro bias estimate becomes negative to compensate. After yaw becomes constant, it takes some time for the $z$ axis gyro bias estimate to re-converge to its correct value ($\approx \SI{0}{\degree\per\second}$). I was able to significantly shorten this time by changing the sensor model's rate gyro correlation time from $1/\alpha = \SI{100}{\second}$ to a fictitiously low $1/\alpha = \SI{10}{\second}$.\\
 
-All attitude components attain a final value within $\SI{2}{\degree}$ of their true value (see table \ref{table:att_est_perf}.\\
+All attitude components attain a final value within $\SI{2}{\degree}$ of their true value (see table \ref{table:att_est_perf}).\\
 
 \begin{table}[!t]
     % increase table row spacing, adjust to taste
@@ -764,9 +764,9 @@ All attitude components attain a final value within $\SI{2}{\degree}$ of their t
     \end{tabular}
 \end{table}
 
-The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90_kraft_quat_ukf_mag}. The \SI{90}{\degree} motions about the $x$ (at $t = \SIrange{5}{12}{\second}$), $y$ (at $t = \SIrange{14}{21}{\second}$) and $z$ (at $t = \SIrange{24}{30}{\second}$) are correctly detected. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{17}{\second}$ when $pitch=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity.
+The experimental xyz90 trajectory is shown in figure \ref{fig:est_result_pickle_xyz90_kraft_quat_ukf_mag}. The \SI{90}{\degree} motions about the $x$ (at $t = $\SIrange{5}{12}{\second}), $y$ (at $t = $\SIrange{14}{21}{\second}) and $z$ (at $t = $\SIrange{24}{30}{\second}) are correctly detected. Also note that the roll and yaw Euler angle experience a gimbal lock singularity at $t = \SI{17}{\second}$ when pitch $=\SI{90}{\degree}$. As in the simulated case, the quaternion representation of attitude does not have a singularity.
 
-After the trajectory is completed, all attitude components attain a final value within $\SI{3}{\degree}$ of their true value (see table \ref{table:att_est_perf_xyz90}.\\
+After the trajectory is completed, all attitude components attain a final value within $\SI{3}{\degree}$ of their true value (see table \ref{table:att_est_perf_xyz90}).\\
 
 
 \begin{table}[!t]
