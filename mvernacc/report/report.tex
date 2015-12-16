@@ -603,7 +603,7 @@ Because my system has nonlinear measurements and approximately Gaussian measurem
 The use of quaternions to represent attitude state requires some modification to the standard UKF algorithm. First, the UKF assumes
 that the state space is a vector space, i.e. that all combinations of settings of the state variables are valid states. While the quaternions $\mathbb{H}$ are a 4-D vector space, only unit quaternions represent valid rotations in $\mathrm{SO(3)}$. Therefore, the attitude state space is the 3-D surface of the unit sphere in $\mathbb{H}$, i.e. it is a manifold, not a vector space.\\
 
-This invalidates the UKF's representation of uncertainty. The distribution of states should only include unit quaternions, so level-sets of likelihood should be 3-D patches on the surface of the unit sphere (figure \ref{fig:quat_uncert_3d}. This requires a 3-D representation of the attitude covariance. However, in the UKF the dimension of the covariance is equal to the dimension of the state. Therefore, the level-sets of likelihood would be 4-D ellipsoids, and the distribution of states would include many non-unit quaternions (figure \ref{fig:quat_uncert_4d}).\\
+This invalidates the UKF's representation of uncertainty. The distribution of states should only include unit quaternions, so level-sets of likelihood should be 3-D patches on the surface of the unit sphere (figure \ref{fig:quat_uncert_3d}). This requires a 3-D representation of the attitude covariance. However, in the UKF the dimension of the covariance is equal to the dimension of the state. Therefore, the level-sets of likelihood would be 4-D ellipsoids, and the distribution of states would include many non-unit quaternions (figure \ref{fig:quat_uncert_4d}).\\
 
 To avoid this, the unit quaternions must be mapped to a 3-D vector space. Fortunately, the unit quaternions form a Lie group ($\mathrm{SO(3)}$), so their logarithms form a Lie algebra ($\mathrm{so(3)}$), which is a vector space (this duality is referred to as the exponential map). The logarithm of a quaternion is defined as follows: for a rotation of $\theta$ radians about a unit axis $\hat{n}$:
 \begin{align}
@@ -629,10 +629,10 @@ The logarithm of a unit quaternion has real part 0, and complex parts equal to t
   \label{fig:quat_uncert_4d}
 \end{figure}
 
-Another issue is that the UKF must average state vectors. However, the unit quaternions are a redundant representation of $\mathrm{SO(3)}$, and a quaternion and its negative represent the same rotation. Before averaging quaternions, we must check their vector dot product, and negate one of the quaternions if it is negative.\\
+Another issue is that the UKF must average state vectors. However, the unit quaternions are a redundant representation of $\mathrm{SO(3)}$, and a quaternion and its negative represent the same rotation. Before averaging quaternions, one must check their vector dot product, and negate one of the quaternions if it is negative.\\
 
 \subsection{Kraft's quaternion UKF algorithm}
-The Kraft's quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions $d\mathcal{Q}^{(i)}$. Its propagation function is presented in algorithm \ref{alg:propdyn}. If there are $n$ non-attitude states, then the covariance $Q$ has dimension $(n+3) \times (n+3)$, the state estimate $\vec{x}^{est}$ has dimension $n+4$, and the sigma points $\vec{\mathcal{X}}^{(i)}$ have dimension $n+3$. States $0, 1, 2, 3$ are the attitude quaternion, other states are vector components or scalars. The diagonal entries $Q[0,0], Q[1,1], Q[2,2]$ represent the attitude estimate variance about the body-frame $x,y,z$ axes, with units of \si{\radian\squared}. $W$ is the process noise covariance, and $R$ is the measurement noise covariance.\\
+Kraft's quaternion UKF \cite{1257247} represents attitude uncertainty with a 3-D covariance, and uses the exponential map to convert 3-D attitude disturbance vectors to disturbance quaternions $d\mathcal{Q}^{(i)}$. Its propagation function is presented in algorithm \ref{alg:propdyn}. If there are $n$ non-attitude states, then the covariance $Q$ has dimension $(n+3) \times (n+3)$, the state estimate $\vec{x}^{est}$ has dimension $n+4$, and the sigma points $\vec{\mathcal{X}}^{(i)}$ have dimension $n+3$. States $0, 1, 2, 3$ are the attitude quaternion, other states are vector components or scalars. The diagonal entries $Q[0,0], Q[1,1], Q[2,2]$ represent the attitude estimate variance about the body-frame $x,y,z$ axes, with units of \si{\radian\squared}. $W$ is the process noise covariance, and $R$ is the measurement noise covariance.\\
 
 \begin{algorithm}
   \caption{Quaternion UKF Dynamics Propagation.}
@@ -686,6 +686,7 @@ The Kraft's quaternion UKF \cite{1257247} represents attitude uncertainty with a
 
 \subsection{Sensor Bias Estimation}
 I augment the system state $[q_{NED2sensor}, \vec{\omega}^{sensor}]$ with the gyroscope bias parameters $\vec{b}_{gyro}$ and run the UKF on the augmented state. This accounts for the time-varying nature of the gyroscope bias.\\
+
 I also attempted to estimate the magnetometer bias in-real time as described in \cite{Crassidis2005}. However, this approach requires the system to move through many orientations to build up information about the magnetometer bias. Many trajectories which I may be interested in estimating do not have a sufficient variety of orientations. Instead, I chose to pre-calibrate the magnetometer (see section \ref{sect:mag_cal}).
 
 \section{Results}
@@ -696,7 +697,7 @@ I ran my estimator on data collected by my sensors in two experimental trajector
 \end{enumerate}
 I was unable to obtain a ground-truth measurement system, so the true state during these experiments is only roughly known. To compensate, I have also run my estimator on simulated measurements of similar trajectories. The true state trajectory is known for the simulated cases.\\
 
-All cases start and end with the sensor level and pointing its $x$ axis to magnetic north. Because of the sensors axis designations and the local magnetic declination, this orientation is $yaw = \SI{15}{\degree}, pitch = \SI{0}{\degree}, roll = \SI{180}{\degree}$ relative to the NED frame. The estimator's initial attitude guess is that the sensor frame is aligned with the NED frame ($q_{init} = [1, 0, 0, 0]$).\\
+All cases start and end with the sensor level and pointing its $x$ axis to magnetic north. Because of the sensor's axis designations and the local magnetic declination, this orientation is $yaw = \SI{15}{\degree}, pitch = \SI{0}{\degree}, roll = \SI{180}{\degree}$ relative to the NED frame. The estimator's initial attitude guess is that the sensor frame is aligned with the NED frame ($q_{init} = [1, 0, 0, 0]$).\\
 
 The results plots contain Euler angle traces on the bottom-right axes. These are included to display the orientation in a human-readable format, but are not used by the estimator. The estimator represents orientation with a quaternion, the components of which are shown on the top-left axes.\\
 
@@ -805,7 +806,7 @@ After the trajectory is completed, all attitude components attain a final value 
 
 
 \section{Conclusion}
-I have successfully implemented Kraft's quaternion based UKF described in \cite{1257247}. The estimator performs well (attitude error $< \SI{3}{\degree}$) on simulated and experimental data. To represent attitude uncertainty, Kraft's UKF uses a 3-D exponential mapped quaternion covariance instead of directly taking the 4-D covariance of the quaternion state. This representation is theoretically justified because the quaternions which represent valid rotations lie on a 3-D manifold within the 4-D quaternion space $\mathbb{H}$. Practically, I have demonstrated that Kraft's UKF has $\approx 10 \times$ faster convergence time that a UKF which uses 4-D quaternion covariance.\\
+I have successfully implemented Kraft's quaternion based UKF described in \cite{1257247}. The estimator performs well (attitude error $< \SI{3}{\degree}$) on simulated and experimental data. To represent attitude uncertainty, Kraft's UKF uses a 3-D exponential mapped quaternion covariance instead of directly taking the 4-D covariance of the quaternion state. This representation is theoretically justified because the quaternions which represent valid rotations lie on a 3-D manifold within the 4-D quaternion space $\mathbb{H}$. Practically, I have demonstrated that Kraft's UKF has $\approx 3 \times$ faster convergence time that a UKF which uses 4-D quaternion covariance.\\
 
 I have also demonstrated the characterization of a MEMS IMU and magnetometer. I used Allan variance to assess the white noise and bias walk parameters of the sensors. I employed a nonlinear least squares optimization algorithm to estimate the magnetometer bias and scale factor error. \\
 
