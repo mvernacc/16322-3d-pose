@@ -5,6 +5,11 @@
 
 This repo contains a implementation of [Edgar Kraft's quaternion-based UKF](http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf) and a program for running the UKF on simulated data or saved experimental data. It also contains sensor drivers for the MPU-9150 on the BeagleBone Black, quaternion utilities, and tools for sensor characterization.
 
+> [!WARNING] 
+> March 2025 update - I don't recommend trying to install and run this code. I wrote it a decade ago, in python 2, and before I knew much about packaging python projects for easy installation. Instead:
+> - If you want more details on this project, read the [PDF report](report/report.pdf).
+> - If you want to use my implementation of Kraft's quaternion-based UKF, please use the latest version of my [estimators repo](https://github.com/mvernacc/estimators). I have updated it to use python 3 and the uv package manager; it will be much easier to install than this code. (This repo still has an old python 2 version of estimators as a submodule.)
+
 
 Installation
 ------------
